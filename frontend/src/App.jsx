@@ -5,6 +5,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import Header from "./components/Header";
 import GenericPageCrud from "./components/CrudPage/GenericCrudPage"
 import useCrud  from './hooks/useCrud';
+import LoginPage from './pages/LoginPage';
 
 import getAppTheme from "./style/theme";
 import serviceConfig from "./configs/serviceConfig"
@@ -33,8 +34,6 @@ function App() {
         <Header tabValue={currentTab} onTabChange={setCurrentTab} mode={mode} toggleTheme={toggleTheme}/>
         
         <Container maxWidth={false} sx={{ mt: 4, pb: 4, px: { xs: 2, md: 5 } }}>
-          
-          {/* Aba 4: Servicos genericos */}
           {currentTab === 3 && (
             <GenericPageCrud 
               title="Serviços"
@@ -50,6 +49,8 @@ function App() {
             />
           )}
         </Container>
+
+        {/* <LoginPage/> */}
       </Box>
     </ThemeProvider>
   );

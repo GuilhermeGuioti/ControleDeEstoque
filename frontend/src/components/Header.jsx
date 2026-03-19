@@ -21,8 +21,6 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import InventoryIcon from '@mui/icons-material/Inventory'; 
 import BuildIcon from '@mui/icons-material/Build';
 
-import BtnMode from '../style/Button'
-
 const Header = ({ tabValue, onTabChange, mode, toggleTheme}) => {
 
   const handleTabChange = (event, newValue) => {

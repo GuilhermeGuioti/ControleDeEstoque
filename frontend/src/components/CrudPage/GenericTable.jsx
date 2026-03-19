@@ -2,7 +2,7 @@ import React, { useState } from 'react'; // Importar useState
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, 
   TableRow, Paper, IconButton, Stack, CircularProgress, Typography,
-  TableSortLabel // Importar o componente de ordenação
+  TableSortLabel
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
