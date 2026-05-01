@@ -6,8 +6,10 @@ import Layout from "./components/Layout";
 import GenericPageCrud from "./components/CrudPage/GenericCrudPage";
 import DashboardPage from "./pages/DashboardPage";
 import SalesPage from "./pages/SalesPage";
+import VendasPage from "./pages/VendasPage";
 import LoginPage from "./pages/LoginPage";
 import useCrud from "./hooks/useCrud";
+import api from "./services/api";
 
 import getAppTheme from "./style/theme";
 import serviceConfig from "./configs/serviceConfig";
@@ -18,63 +20,64 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const [mode, setMode] = useState("light");
-  const [notification, setNotification] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
+  const [notification, setNotification] = useState({ open: false, message: "", severity: "info" });
 
-  const toggleTheme = () => {
-    setMode((prev) => (prev === "light" ? "dark" : "light"));
-  };
+  const toggleTheme = () => setMode((prev) => (prev === "light" ? "dark" : "light"));
 
-  const handleLogin = (email, password) => {
-    if (email && password) {
-      setIsLoggedIn(true);
-      localStorage.setItem("isLoggedIn", "true");
-    }
+  const handleLogin = async (username, password) => {
+    // TODO: reativar quando o backend tiver um usuário cadastrado
+    // const formData = new URLSearchParams();
+    // formData.append("username", username);
+    // formData.append("password", password);
+    // const response = await api.post("/login/token", formData, {
+    //   headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    // });
+    // localStorage.setItem("authToken", response.data.access_token);
+    if (!username || !password) throw new Error("Preencha email e senha");
+    localStorage.setItem("isLoggedIn", "true");
+    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentTab(0);
     localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("authToken");
   };
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn");
-    if (loggedIn === "true") {
-      setIsLoggedIn(true);
-    }
+    const token = localStorage.getItem("authToken");
+    if (loggedIn === "true" && token) setIsLoggedIn(true);
   }, []);
 
-  const services = useCrud("/servicos");
-  const clients = useCrud("/clientes");
-  const products = useCrud("/produtos");
+  const notify = (severity, message) => setNotification({ open: true, severity, message });
+
+  const services = useCrud("/servicos", notify);
+  const clients = useCrud("/clientes", notify);
+  const products = useCrud("/produtos", notify);
+  const vendas = useCrud("/vendas", notify);
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    if (currentTab === 2) products.fetchData();
-    if (currentTab === 3) services.fetchData();
-    if (currentTab === 4) clients.fetchData();
-  }, [currentTab, isLoggedIn]);
+    products.fetchData();
+    services.fetchData();
+    clients.fetchData();
+    if (currentTab === 5) vendas.fetchData();
+  }, [isLoggedIn, currentTab]);
 
   const handleQuickExit = (item, quantity) => {
     if (item && item.id) {
-      const newQuantity = Math.max(0, item.quantidade - quantity);
-      products.handleEdit({ ...item, quantidade: newQuantity });
+      const newQuantity = Math.max(0, (item.quantidade || 0) - quantity);
+      products.handleEdit(item.id, { ...item, quantidade: newQuantity });
     }
   };
 
-  const handleNavigate = (tab) => {
-    setCurrentTab(tab);
-  };
+  const handleNavigate = (tab) => setCurrentTab(tab);
 
   const theme = useMemo(() => getAppTheme(mode), [mode]);
 
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
-  };
+  const handleCloseNotification = () => setNotification({ ...notification, open: false });
 
   if (!isLoggedIn) {
     return (
@@ -109,7 +112,17 @@ function App() {
             products={products.data}
             services={services.data}
             clients={clients.data}
-            onQuickExit={handleQuickExit}
+            onSaleComplete={() => { products.fetchData(); vendas.fetchData(); }}
+          />
+        )}
+
+        {currentTab === 5 && (
+          <VendasPage
+            vendas={vendas.data}
+            clients={clients.data}
+            products={products.data}
+            loading={vendas.loading}
+            onDelete={vendas.handleDelete}
           />
         )}
 
@@ -166,11 +179,7 @@ function App() {
           onClose={handleCloseNotification}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         >
-          <Alert
-            onClose={handleCloseNotification}
-            severity={notification.severity}
-            sx={{ width: "100%" }}
-          >
+          <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: "100%" }}>
             {notification.message}
           </Alert>
         </Snackbar>

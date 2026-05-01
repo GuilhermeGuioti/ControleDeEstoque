@@ -4,6 +4,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import GenericTable from './GenericTable';
 import GenericModal from './GenericModal';
+import GenericQuickExitModal from './GenericQuickExitModal';
 
 const GenericPageCrud = ({
   title,
@@ -22,6 +23,7 @@ const GenericPageCrud = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [quickExitItem, setQuickExitItem] = useState(null);
 
   const filteredData = data.filter((item) =>
     Object.values(item).some((value) =>
@@ -32,7 +34,12 @@ const GenericPageCrud = ({
   const handleAdd = () => { setSelectedItem(null); setIsModalOpen(true); };
   const handleEdit = (item) => { setSelectedItem(item); setIsModalOpen(true); };
   const handleClose = () => { setIsModalOpen(false); setSelectedItem(null); };
-  const handleSaveInternal = (formData) => { onSave(formData, selectedItem); handleClose(); };
+
+  const handleOpenQuickExit = (item) => setQuickExitItem(item);
+  const handleCloseQuickExit = () => setQuickExitItem(null);
+  const handleConfirmQuickExit = (id, quantity) => {
+    if (onQuickExit) onQuickExit(quickExitItem, quantity);
+  };
 
   return (
     <Box sx={{ maxWidth: '100%' }}>
@@ -52,11 +59,7 @@ const GenericPageCrud = ({
             <Chip
               label={filteredData.length}
               size="small"
-              sx={{
-                fontWeight: 700, fontSize: '0.7rem',
-                bgcolor: 'action.selected',
-                color: 'primary.main',
-              }}
+              sx={{ fontWeight: 700, fontSize: '0.7rem', bgcolor: 'action.selected', color: 'primary.main' }}
             />
           </Stack>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -64,12 +67,7 @@ const GenericPageCrud = ({
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-          sx={{ flexShrink: 0 }}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd} sx={{ flexShrink: 0 }}>
           {buttonLabel}
         </Button>
       </Stack>
@@ -96,7 +94,7 @@ const GenericPageCrud = ({
         data={filteredData}
         onEdit={handleEdit}
         onDelete={onDelete}
-        onQuickExit={onQuickExit}
+        onQuickExit={showQuickExit ? handleOpenQuickExit : undefined}
         showQuickExit={showQuickExit}
       />
 
@@ -107,9 +105,20 @@ const GenericPageCrud = ({
         title={title}
         fields={formFields}
         initialData={selectedItem}
-        onSave={handleSaveInternal}
+        onSave={onSave}
         onUpdate={onUpdate}
       />
+
+      {showQuickExit && (
+        <GenericQuickExitModal
+          open={Boolean(quickExitItem)}
+          handleClose={handleCloseQuickExit}
+          item={quickExitItem}
+          onConfirm={handleConfirmQuickExit}
+          itemLabel="nome"
+          quantityLabel="quantidade"
+        />
+      )}
     </Box>
   );
 };

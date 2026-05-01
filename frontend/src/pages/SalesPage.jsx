@@ -1,15 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import {
   Box, Grid, Typography, Stack, TextField, Button, Divider,
-  IconButton, InputAdornment, Tabs, Tab, Chip, Dialog, DialogTitle,
+  IconButton, InputAdornment, Tabs, Tab, Chip, Dialog,
   DialogContent, DialogActions, Autocomplete, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Avatar, Paper, alpha
+  TableCell, TableContainer, TableHead, TableRow, Avatar, Paper,
+  MenuItem, Alert, CircularProgress, alpha
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
@@ -17,11 +17,14 @@ import ContentCutIcon from '@mui/icons-material/ContentCut';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import PersonIcon from '@mui/icons-material/Person';
 import { BRAND_GRADIENT } from '../style/theme';
+import api from '../services/api';
 
 const FMT_BRL = (v) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
 
-const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) => {
+const FORMAS_PAGAMENTO = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'PIX', 'Outro'];
+
+const SalesPage = ({ products = [], services = [], clients = [], onSaleComplete }) => {
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState([]);
@@ -29,13 +32,16 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
   const [activeTab, setActiveTab] = useState(0);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
+  const [formaPagamento, setFormaPagamento] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredProducts = useMemo(() =>
     products.filter(p => p.nome?.toLowerCase().includes(searchTerm.toLowerCase()) && p.quantidade > 0),
     [products, searchTerm]
   );
   const filteredServices = useMemo(() =>
-    services.filter(s => s.nome_servico?.toLowerCase().includes(searchTerm.toLowerCase())),
+    services.filter(s => s.nome?.toLowerCase().includes(searchTerm.toLowerCase())),
     [services, searchTerm]
   );
   const filteredClients = useMemo(() => {
@@ -54,8 +60,8 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
       setCart(cart.map(i => (i.id === item.id && i.type === type) ? { ...i, quantidade: i.quantidade + 1 } : i));
     } else {
       setCart([...cart, {
-        id: item.id, nome: item.nome_servico || item.nome,
-        preco: item.preco || item.preco_custo || 0,
+        id: item.id, nome: item.nome,
+        preco: item.preco || 0,
         quantidade: 1, type, product: item,
       }]);
     }
@@ -73,14 +79,37 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
 
   const removeFromCart = (id, type) => setCart(cart.filter(i => !(i.id === id && i.type === type)));
 
-  const handleCheckout = () => {
-    if (!selectedClient) { alert('Selecione um cliente'); return; }
-    cart.filter(i => i.type === 'product').forEach(i => {
-      if (onQuickExit) onQuickExit(i.product, i.quantidade);
-    });
-    setCart([]);
-    setSelectedClient(null);
-    setIsCheckoutOpen(false);
+  const handleCheckout = async () => {
+    setCheckoutError('');
+    const productItems = cart.filter(i => i.type === 'product');
+    if (productItems.length === 0) {
+      setCheckoutError('Adicione pelo menos um produto ao carrinho para registrar a venda.');
+      return;
+    }
+
+    const payload = {
+      cliente_id: selectedClient?.id || null,
+      forma_pagamento: formaPagamento || null,
+      itens: productItems.map(i => ({
+        produto_id: i.id,
+        quantidade: i.quantidade,
+        preco_unitario: i.preco,
+      })),
+    };
+
+    setIsSubmitting(true);
+    try {
+      await api.post('/vendas/', payload);
+      setCart([]);
+      setSelectedClient(null);
+      setFormaPagamento('');
+      setIsCheckoutOpen(false);
+      onSaleComplete?.();
+    } catch (err) {
+      setCheckoutError(err.response?.data?.detail || 'Erro ao registrar venda. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -106,7 +135,7 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
 
       <Grid container spacing={2.5}>
         {/* Product / Service list */}
-        <Grid item xs={12} lg={8}>
+        <Grid item xs={12} md={7}>
           <Paper elevation={0} sx={{
             borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden',
           }}>
@@ -181,7 +210,7 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2" sx={{ fontWeight: 700, color: '#059669' }}>
-                            {FMT_BRL(product.preco_custo)}
+                            {FMT_BRL(product.preco)}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
@@ -219,7 +248,7 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                             }}>
                               <ContentCutIcon sx={{ fontSize: 16 }} />
                             </Avatar>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{service.nome_servico}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{service.nome}</Typography>
                           </Stack>
                         </TableCell>
                         <TableCell align="center">
@@ -252,7 +281,7 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
         </Grid>
 
         {/* Cart */}
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12} md={5}>
           <Paper elevation={0} sx={{
             borderRadius: 3, border: '1px solid', borderColor: 'divider',
             position: 'sticky', top: 80, overflow: 'hidden',
@@ -278,17 +307,14 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                   <Chip
                     label={cartItemsCount}
                     size="small"
-                    sx={{
-                      background: BRAND_GRADIENT, color: '#fff',
-                      fontWeight: 800, fontSize: '0.75rem',
-                    }}
+                    sx={{ background: BRAND_GRADIENT, color: '#fff', fontWeight: 800, fontSize: '0.75rem' }}
                   />
                 )}
               </Stack>
             </Box>
 
             {/* Cart items */}
-            <Box sx={{ maxHeight: 'calc(100vh - 420px)', minHeight: 200, overflowY: 'auto', px: 2, py: 1.5 }}>
+            <Box sx={{ maxHeight: 'calc(100vh - 340px)', minHeight: 300, overflowY: 'auto', px: 2, py: 1.5 }}>
               {cart.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 5 }}>
                   <Box sx={{
@@ -298,9 +324,7 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                   }}>
                     <ShoppingCartIcon sx={{ color: 'primary.main', fontSize: 24, opacity: 0.5 }} />
                   </Box>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Carrinho vazio
-                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Carrinho vazio</Typography>
                   <Typography variant="caption" sx={{ color: 'text.secondary', opacity: 0.7 }}>
                     Clique nos itens para adicionar
                   </Typography>
@@ -308,14 +332,11 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
               ) : (
                 <Stack spacing={0}>
                   {cart.map((item, idx) => (
-                    <Box
-                      key={idx}
-                      sx={{
-                        py: 1.5,
-                        borderBottom: idx < cart.length - 1 ? '1px solid' : 'none',
-                        borderColor: 'divider',
-                      }}
-                    >
+                    <Box key={idx} sx={{
+                      py: 1.5,
+                      borderBottom: idx < cart.length - 1 ? '1px solid' : 'none',
+                      borderColor: 'divider',
+                    }}>
                       <Stack direction="row" alignItems="flex-start" spacing={1}>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
@@ -336,7 +357,6 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                           <CloseIcon sx={{ fontSize: 14 }} />
                         </IconButton>
                       </Stack>
-
                       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1 }}>
                         <Stack direction="row" alignItems="center" spacing={0.5}>
                           <IconButton
@@ -383,13 +403,10 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                   <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                     Total ({cartItemsCount} itens)
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                    {FMT_BRL(cartTotal)}
-                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>{FMT_BRL(cartTotal)}</Typography>
                 </Stack>
                 <Button
-                  fullWidth
-                  variant="contained"
+                  fullWidth variant="contained"
                   startIcon={<CheckCircleOutlineIcon />}
                   onClick={() => setIsCheckoutOpen(true)}
                   sx={{ py: 1.25 }}
@@ -405,12 +422,10 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
       {/* Checkout dialog */}
       <Dialog
         open={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
+        onClose={() => { setIsCheckoutOpen(false); setCheckoutError(''); }}
         maxWidth="sm"
         fullWidth
-        slotProps={{
-          backdrop: { sx: { backdropFilter: 'blur(6px)' } }
-        }}
+        slotProps={{ backdrop: { sx: { backdropFilter: 'blur(6px)' } } }}
       >
         <Box sx={{
           p: 3, pb: 2.5,
@@ -434,16 +449,22 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                 Confirme os dados antes de concluir
               </Typography>
             </Box>
-            <IconButton size="small" onClick={() => setIsCheckoutOpen(false)}>
+            <IconButton size="small" onClick={() => { setIsCheckoutOpen(false); setCheckoutError(''); }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </Stack>
         </Box>
 
         <DialogContent sx={{ p: 3 }}>
+          {checkoutError && (
+            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setCheckoutError('')}>
+              {checkoutError}
+            </Alert>
+          )}
+
           {/* Client selector */}
           <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
-            Cliente *
+            Cliente
           </Typography>
           <Autocomplete
             options={filteredClients}
@@ -501,7 +522,26 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
             </Box>
           )}
 
-          <Divider sx={{ my: 2.5 }} />
+          <Divider sx={{ my: 2 }} />
+
+          {/* Forma de pagamento */}
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: 'text.secondary' }}>
+            Forma de Pagamento
+          </Typography>
+          <TextField
+            select fullWidth
+            value={formaPagamento}
+            onChange={(e) => setFormaPagamento(e.target.value)}
+            placeholder="Selecione..."
+            size="medium"
+          >
+            <MenuItem value="">Não informar</MenuItem>
+            {FORMAS_PAGAMENTO.map(f => (
+              <MenuItem key={f} value={f}>{f}</MenuItem>
+            ))}
+          </TextField>
+
+          <Divider sx={{ my: 2 }} />
 
           {/* Order summary */}
           <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
@@ -514,6 +554,9 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                     {item.nome}
                     <Typography component="span" variant="caption" sx={{ ml: 0.5 }}>×{item.quantidade}</Typography>
+                    {item.type === 'service' && (
+                      <Typography component="span" variant="caption" sx={{ ml: 0.5, color: '#ec4899' }}>(serviço)</Typography>
+                    )}
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>
                     {FMT_BRL(item.preco * item.quantidade)}
@@ -524,20 +567,22 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
             <Divider sx={{ my: 1.5 }} />
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="body1" sx={{ fontWeight: 700 }}>Total</Typography>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: '#059669' }}>
-                {FMT_BRL(cartTotal)}
-              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#059669' }}>{FMT_BRL(cartTotal)}</Typography>
             </Stack>
           </Box>
         </DialogContent>
 
         <DialogActions sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider', gap: 1 }}>
-          <Button onClick={() => setIsCheckoutOpen(false)} variant="outlined" sx={{ flex: 1 }}>
+          <Button
+            onClick={() => { setIsCheckoutOpen(false); setCheckoutError(''); }}
+            variant="outlined" sx={{ flex: 1 }}
+          >
             Cancelar
           </Button>
           <Button
             onClick={handleCheckout}
             variant="contained"
+            disabled={isSubmitting}
             sx={{
               flex: 2,
               background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
@@ -548,7 +593,10 @@ const SalesPage = ({ products = [], services = [], clients = [], onQuickExit }) 
               },
             }}
           >
-            Confirmar Venda
+            {isSubmitting
+              ? <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.8)' }} />
+              : 'Confirmar Venda'
+            }
           </Button>
         </DialogActions>
       </Dialog>

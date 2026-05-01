@@ -9,6 +9,7 @@ import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import PeopleIcon from '@mui/icons-material/People';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -19,7 +20,8 @@ const DRAWER_WIDTH = 268;
 
 const menuItems = [
   { id: 0, label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
-  { id: 1, label: 'PDV / Vendas', icon: <PointOfSaleIcon fontSize="small" /> },
+  { id: 1, label: 'PDV', icon: <PointOfSaleIcon fontSize="small" /> },
+  { id: 5, label: 'Histórico de Vendas', icon: <ReceiptLongIcon fontSize="small" /> },
   { id: 2, label: 'Estoque', icon: <InventoryIcon fontSize="small" /> },
   { id: 3, label: 'Serviços', icon: <ContentCutIcon fontSize="small" /> },
   { id: 4, label: 'Clientes', icon: <PeopleIcon fontSize="small" /> },

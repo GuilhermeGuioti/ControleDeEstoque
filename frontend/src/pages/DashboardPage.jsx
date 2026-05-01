@@ -9,7 +9,6 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { BRAND_GRADIENT } from '../style/theme';
 
@@ -142,48 +141,34 @@ const EmptyRow = ({ cols, text }) => (
 
 const DashboardPage = ({ products = [], services = [], clients = [], onNavigate }) => {
   const stats = useMemo(() => {
-    const hoje = new Date();
     let totalValue = 0;
-    let expiringCount = 0;
     let lowStockCount = 0;
     products.forEach(item => {
-      totalValue += (item.quantidade || 0) * (item.preco_custo || 0);
-      if (item.data_validade) {
-        const diffDias = Math.ceil((new Date(item.data_validade) - hoje) / 86400000);
-        if (diffDias <= 30) expiringCount++;
-      }
-      if (item.quantidade_minima && (item.quantidade || 0) <= item.quantidade_minima) lowStockCount++;
+      totalValue += (item.quantidade || 0) * (item.preco || 0);
+      if ((item.quantidade || 0) <= 5) lowStockCount++;
     });
-    return { totalProducts: products.length, totalServices: services.length, totalClients: clients.length, totalValue, expiringCount, lowStockCount };
+    return { totalProducts: products.length, totalServices: services.length, totalClients: clients.length, totalValue, lowStockCount };
   }, [products, services, clients]);
 
   const alerts = useMemo(() => {
-    const hoje = new Date();
-    const expiring = [];
-    const lowStock = [];
-    products.forEach(p => {
-      if (p.data_validade) {
-        const diffDias = Math.ceil((new Date(p.data_validade) - hoje) / 86400000);
-        if (diffDias <= 30) expiring.push({ nome: p.nome, dias: diffDias, valor: (p.preco_custo || 0) * (p.quantidade || 0) });
-      }
-      if (p.quantidade_minima && p.quantidade <= p.quantidade_minima) {
-        lowStock.push({ nome: p.nome, qtd: p.quantidade, min: p.quantidade_minima });
-      }
-    });
-    return { expiring: expiring.slice(0, 5), lowStock: lowStock.slice(0, 5) };
+    const lowStock = products
+      .filter(p => (p.quantidade || 0) <= 5)
+      .map(p => ({ nome: p.nome, qtd: p.quantidade || 0, valor: (p.preco || 0) * (p.quantidade || 0) }))
+      .slice(0, 5);
+    return { lowStock };
   }, [products]);
 
   const statValues = [
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(stats.totalValue),
     stats.totalServices,
     stats.totalClients,
-    'R$ 0',
+    stats.totalProducts,
   ];
   const statSubtitles = [
     `${stats.totalProducts} produtos`,
     'cadastrados',
     'cadastrados',
-    '0 atendimentos',
+    'em estoque',
   ];
 
   return (
@@ -216,60 +201,6 @@ const DashboardPage = ({ products = [], services = [], clients = [], onNavigate 
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <AlertTable
-            title="Produtos Vencendo"
-            icon={WarningAmberIcon}
-            iconColor="#f59e0b"
-            badge={stats.expiringCount}
-          >
-            <TableHead>
-              <TableRow>
-                <TableCell>Produto</TableCell>
-                <TableCell align="center" sx={{ width: 80 }}>Dias</TableCell>
-                <TableCell align="right" sx={{ width: 110 }}>Valor</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {alerts.expiring.length === 0
-                ? <EmptyRow cols={3} text="Nenhum produto vencendo em 30 dias" />
-                : alerts.expiring.map((item, idx) => (
-                  <TableRow key={idx} hover>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1.5}>
-                        <Avatar sx={{
-                          width: 28, height: 28, borderRadius: 1,
-                          bgcolor: alpha('#f59e0b', 0.12), color: '#f59e0b', fontSize: 14,
-                        }}>
-                          <InventoryIcon sx={{ fontSize: 14 }} />
-                        </Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.nome}</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={item.dias <= 0 ? 'Vencido' : `${item.dias}d`}
-                        size="small"
-                        sx={{
-                          fontWeight: 700, fontSize: '0.68rem',
-                          bgcolor: alpha(item.dias <= 0 ? '#ef4444' : '#f59e0b', 0.12),
-                          color: item.dias <= 0 ? '#ef4444' : '#d97706',
-                          border: '1px solid', borderColor: alpha(item.dias <= 0 ? '#ef4444' : '#f59e0b', 0.2),
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor || 0)}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))
-              }
-            </TableBody>
-          </AlertTable>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <AlertTable
             title="Estoque Crítico"
             icon={TrendingDownIcon}
             iconColor="#ef4444"
@@ -278,8 +209,8 @@ const DashboardPage = ({ products = [], services = [], clients = [], onNavigate 
             <TableHead>
               <TableRow>
                 <TableCell>Produto</TableCell>
-                <TableCell align="center" sx={{ width: 80 }}>Atual</TableCell>
-                <TableCell align="center" sx={{ width: 80 }}>Mínimo</TableCell>
+                <TableCell align="center" sx={{ width: 80 }}>Qtd</TableCell>
+                <TableCell align="right" sx={{ width: 120 }}>Valor</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -304,15 +235,52 @@ const DashboardPage = ({ products = [], services = [], clients = [], onNavigate 
                         size="small"
                         sx={{
                           fontWeight: 700, fontSize: '0.68rem',
-                          bgcolor: alpha('#ef4444', 0.10),
-                          color: '#ef4444',
-                          border: '1px solid', borderColor: alpha('#ef4444', 0.2),
+                          bgcolor: alpha(item.qtd === 0 ? '#ef4444' : '#f59e0b', 0.10),
+                          color: item.qtd === 0 ? '#ef4444' : '#d97706',
+                          border: '1px solid', borderColor: alpha(item.qtd === 0 ? '#ef4444' : '#f59e0b', 0.2),
                         }}
                       />
                     </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor || 0)}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))
+              }
+            </TableBody>
+          </AlertTable>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <AlertTable
+            title="Produtos em Estoque"
+            icon={InventoryIcon}
+            iconColor="#3b82f6"
+            badge={products.length}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell>Produto</TableCell>
+                <TableCell align="center" sx={{ width: 80 }}>Qtd</TableCell>
+                <TableCell align="right" sx={{ width: 120 }}>Valor Unit.</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {products.length === 0
+                ? <EmptyRow cols={3} text="Nenhum produto cadastrado" />
+                : products.slice(0, 5).map((item, idx) => (
+                  <TableRow key={idx} hover>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.nome}</Typography>
+                    </TableCell>
                     <TableCell align="center">
-                      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                        {item.min}
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.quantidade ?? 0}</Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.preco || 0)}
                       </Typography>
                     </TableCell>
                   </TableRow>

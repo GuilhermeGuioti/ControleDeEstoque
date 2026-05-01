@@ -24,17 +24,16 @@ const LoginPage = ({ onLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.email || !formData.senha) {
+      setError('Por favor, preencha email e senha');
+      return;
+    }
     setIsLoading(true);
     setError('');
     try {
-      await new Promise(resolve => setTimeout(resolve, 600));
-      if (formData.email && formData.senha) {
-        onLogin(formData.email, formData.senha);
-      } else {
-        setError('Por favor, preencha email e senha');
-      }
-    } catch {
-      setError('Erro ao fazer login. Tente novamente.');
+      await onLogin(formData.email, formData.senha);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Credenciais inválidas. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +135,7 @@ const LoginPage = ({ onLogin }) => {
               <TextField
                 fullWidth
                 name="email"
-                type="email"
+                type="text"
                 label="Email"
                 value={formData.email}
                 onChange={handleChange}

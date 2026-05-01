@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import api from '../services/api';
 
-const useCrud = (endpoint) => {
+const useCrud = (endpoint, notify) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -11,33 +11,31 @@ const useCrud = (endpoint) => {
       const response = await api.get(endpoint);
       setData(response.data);
     } catch (error) {
-      console.error(`Erro ao buscar ${endpoint}:`, error);
+      notify?.('error', `Erro ao carregar dados: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
     }
   }, [endpoint]);
 
-  const handleSave = async (payload, existingItem = null) => {
+  const handleSave = async (payload) => {
     try {
-      const hasId = existingItem && (existingItem.id || existingItem._id);
-      if (hasId) {
-        await api.put(`${endpoint}/${existingItem.id || existingItem._id}`, payload);
-      } else {
-        await api.post(endpoint, payload);
-      }
-      await fetchData(); 
+      await api.post(endpoint, payload);
+      await fetchData();
+      notify?.('success', 'Cadastrado com sucesso!');
     } catch (error) {
-      console.error("Erro ao salvar:", error);
+      notify?.('error', `Erro ao salvar: ${error.response?.data?.detail || error.message}`);
     }
   };
 
-  const handleEdit = async (payload) => {
+  const handleEdit = async (id, payload) => {
     try {
-      const id = payload.id || payload._id;
-      await api.put(`${endpoint}/${id}`, payload);
-      await fetchData(); 
+      // remove id do body — alguns backends rejeitam campos extras
+      const { id: _id, ...body } = payload;
+      await api.put(`${endpoint}/${id}`, body);
+      await fetchData();
+      notify?.('success', 'Atualizado com sucesso!');
     } catch (error) {
-      console.error("Erro ao editar:", error);
+      notify?.('error', `Erro ao editar: ${error.response?.data?.detail || error.message}`);
     }
   };
 
@@ -45,12 +43,13 @@ const useCrud = (endpoint) => {
     try {
       await api.delete(`${endpoint}/${id}`);
       await fetchData();
+      notify?.('success', 'Excluído com sucesso!');
     } catch (error) {
-      console.error("Erro ao deletar:", error);
+      notify?.('error', `Erro ao excluir: ${error.response?.data?.detail || error.message}`);
     }
   };
 
   return { data, loading, fetchData, handleSave, handleDelete, handleEdit };
 };
 
-export default useCrud
+export default useCrud;
