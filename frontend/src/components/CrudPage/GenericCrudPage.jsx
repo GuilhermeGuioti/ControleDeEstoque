@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Container } from '@mui/material';
-import GenericInventory from "./GenericInventory";
+import { Box, Container, Card, CardContent, Typography, Stack, TextField, InputAdornment, Button } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
 import GenericTable from "./GenericTable";
 import GenericModal from "./GenericModal";
 
@@ -14,7 +16,9 @@ const GenericPageCrud = ({
   formFields,
   onSave,
   onDelete,
-  onUpdate 
+  onUpdate,
+  onQuickExit,
+  showQuickExit = false
 }) => {
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [selectedItem, setSelectedItem] = useState(null);
@@ -48,28 +52,52 @@ const GenericPageCrud = ({
 
   return (
     <Container maxWidth="xl">
-      <GenericInventory 
-        title={title}
-        subtitle={subtitle}
-        buttonLabel={buttonLabel}
-        searchPlaceholder={searchPlaceholder}
-        onAddClick={handleAdd}
-        onSearchChange={(e) => setSearchTerm(e.target.value)}
-        searchValue={searchTerm}
-      />
+      <Box sx={{ mb: 3 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              {title}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {subtitle}
+            </Typography>
+          </Box>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd} sx={{ borderRadius: 2 }}>
+            {buttonLabel}
+          </Button>
+        </Stack>
+
+        <TextField
+          fullWidth
+          placeholder={searchPlaceholder}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
+          sx={{ mb: 2 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
       
       <GenericTable 
         columns={columns} 
         data={filteredData}
         onEdit={handleEdit}
         onDelete={onDelete}
+        onQuickExit={onQuickExit}
+        showQuickExit={showQuickExit}
       />
 
       <GenericModal 
          key={selectedItem ? (selectedItem.id || selectedItem._id) : 'new-item'}
          open={isModalOpen}
          handleClose={handleClose}
-         title={selectedItem ? `Edit ${title}` : `Create New ${title}`}
+         title={title}
          fields={formFields}
          initialData={selectedItem}
          onSave={handleSaveInternal}

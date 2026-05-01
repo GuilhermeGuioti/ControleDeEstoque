@@ -1,11 +1,12 @@
-import React, { useState } from 'react'; // Importar useState
+import React, { useState } from 'react';
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, 
   TableRow, Paper, IconButton, Stack, CircularProgress, Typography,
-  TableSortLabel
+  TableSortLabel, Button
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
 const DataTable = ({ 
   columns = [], 
@@ -13,6 +14,8 @@ const DataTable = ({
   loading = false,
   onEdit, 
   onDelete,
+  onQuickExit,
+  showQuickExit = false,
   emptyMessage = "Nenhum registro encontrado."
 }) => {
   const [order, setOrder] = useState('asc');
@@ -60,7 +63,7 @@ const DataTable = ({
                 </TableSortLabel>
               </TableCell>
             ))}
-            {(onEdit || onDelete) && (
+            {(onEdit || onDelete || onQuickExit) && (
               <TableCell sx={{ color: 'text.secondary', fontWeight: 800, fontSize: '0.65rem', textAlign: 'center' }}>AÇÕES</TableCell>
             )}
           </TableRow>
@@ -88,9 +91,21 @@ const DataTable = ({
                   </TableCell>
                 ))}
                 
-                {(onEdit || onDelete) && (
+                {(onEdit || onDelete || onQuickExit) && (
                   <TableCell>
                     <Stack direction="row" spacing={1} justifyContent="center">
+                      {showQuickExit && onQuickExit && (
+                        <Button 
+                          size="small" 
+                          variant="outlined"
+                          color="primary"
+                          startIcon={<RemoveCircleOutlineIcon />}
+                          onClick={() => onQuickExit(row)}
+                          sx={{ fontSize: '0.7rem', textTransform: 'none', py: 0.5, px: 1, minWidth: 'auto' }}
+                        >
+                          Saída
+                        </Button>
+                      )}
                       {onEdit && (
                         <IconButton size="small" sx={{ color: 'primary.main', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => onEdit(row)}>
                           <EditIcon fontSize="small" />

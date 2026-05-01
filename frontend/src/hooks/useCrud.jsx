@@ -17,27 +17,30 @@ const useCrud = (endpoint) => {
     }
   }, [endpoint]);
 
-  // Salvar (POST)
-  const handleSave = async (payload) => {
+  const handleSave = async (payload, existingItem = null) => {
     try {
-      await api.post(endpoint, payload);
+      const hasId = existingItem && (existingItem.id || existingItem._id);
+      if (hasId) {
+        await api.put(`${endpoint}/${existingItem.id || existingItem._id}`, payload);
+      } else {
+        await api.post(endpoint, payload);
+      }
       await fetchData(); 
     } catch (error) {
       console.error("Erro ao salvar:", error);
     }
   };
 
-  // Salvar (POST)
-  const handleEdit = async (id, payload) => {
+  const handleEdit = async (payload) => {
     try {
+      const id = payload.id || payload._id;
       await api.put(`${endpoint}/${id}`, payload);
       await fetchData(); 
     } catch (error) {
-      console.error("Erro ao salvar:", error);
+      console.error("Erro ao editar:", error);
     }
   };
 
-  // Deletar (DELETE)
   const handleDelete = async (id) => {
     try {
       await api.delete(`${endpoint}/${id}`);

@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Box, Typography, IconButton, TextField, Button, Stack, MenuItem
+  Box, Typography, TextField, Button, Stack, Chip, MenuItem
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { alpha } from '@mui/material/styles';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 
-const FieldLabel = ({ children }) => (
-  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, mb: 0.5, color: 'text.primary', display: 'block' }}>
-    {children}
-  </Typography>
-);
+const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, onUpdate, entityIcon: Icon }) => {
+  const [formData, setFormData] = useState({});
 
-const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, onUpdate }) => {
-  const [formData, setFormData] = useState(initialData || {});
+  useEffect(() => {
+    if (open) {
+      setFormData(initialData || {});
+    }
+  }, [open, initialData]);
 
   const handleChange = (id, value, type) => {
     const finalValue = type === 'number' && value !== '' ? Number(value) : value;
@@ -23,8 +24,7 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
 
   const handleSubmit = () => {
     if (isEditing) {
-      console.log(formData)
-      onUpdate(formData.id, formData)
+      onUpdate(formData.id || formData._id, formData);
     } else {
       onSave(formData);
     }
@@ -37,93 +37,122 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
-      disableRestoreFocus
       PaperProps={{ 
-        sx: { borderRadius: 3, padding: 1 } 
+        sx: { borderRadius: 3, overflow: 'hidden', mx: 2 } 
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: alpha('#000', 0.5),
+            backdropFilter: 'blur(4px)'
+          }
+        }
       }}
     >
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.2rem', color: 'primary.superDark' }}>
-          {title}
-        </Typography>
-        <IconButton onClick={handleClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+      <Box 
+        sx={{ 
+          p: 3, 
+          pb: 2, 
+          background: 'background.default',
+          borderBottom: '1px solid',
+          borderColor: 'divider'
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Box sx={{ p: 1.5, borderRadius: 2, background: 'primary.main', opacity: 0.12 }}>
+            {Icon ? <Icon sx={{ color: 'primary.main', fontSize: 24 }} /> : <AddCircleIcon sx={{ color: 'primary.main', fontSize: 24 }} />}
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              {isEditing ? `Editar ${title}` : `Novo ${title}`}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {isEditing ? 'Atualize os dados informados' : 'Preencha os dados do novo registro'}
+            </Typography>
+          </Box>
+          <Chip 
+            label={isEditing ? 'Editando' : 'Criando'} 
+            size="small" 
+            sx={{ 
+              fontWeight: 600,
+              fontSize: '0.7rem',
+              background: isEditing ? 'primary.main' : 'success.main',
+              color: '#fff',
+            }} 
+          />
+        </Stack>
+      </Box>
 
-      <DialogContent sx={{ p: 2, pb: 4 }}>
-        <Stack spacing={2}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            {fields.map((field) => (
-              <Box 
-                key={field.id} 
+      <DialogContent sx={{ p: 3, pt: 3 }}>
+        <Stack spacing={2.5}>
+          {fields.map((field) => (
+            <Box key={field.id}>
+              <Typography 
+                variant="body2" 
                 sx={{ 
-                  width: field.halfWidth ? { xs: '100%', sm: 'calc(50% - 8px)' } : '100%',
+                  fontWeight: 600, 
+                  color: 'text.secondary',
+                  mb: 1,
+                  ml: 0.5
                 }}
               >
-                <FieldLabel>{field.label}</FieldLabel>
-                <TextField
-                  fullWidth
-                  size="small"
-                  select={field.type === 'select'}
-                  type={field.type === 'number' ? 'decimal' : 'text'}
-                  placeholder={field.placeholder}
-                  multiline={field.multiline}
-                  rows={field.rows || 1}
-                  value={formData[field.id] || ''}
-                  onChange={(e) => handleChange(field.id, e.target.value, field.type)}
-                  sx={{ 
-                    '& .MuiOutlinedInput-root': { 
-                      borderRadius: '10px',
-                      bgcolor: 'background.default'
-                    } 
-                  }}
-                >
-                  {field.type === 'select' && field.options?.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-            ))}
-          </Box>
+                {field.label}
+              </Typography>
+              <TextField
+                fullWidth
+                type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                select={field.type === 'select'}
+                value={formData[field.id] || ''}
+                onChange={(e) => handleChange(field.id, e.target.value, field.type)}
+                InputLabelProps={field.type === 'date' ? { shrink: true } : undefined}
+                placeholder={field.placeholder}
+                variant="outlined"
+                size="medium"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
+              >
+                {field.type === 'select' && field.options?.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          ))}
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, pt: 0, gap: 1.5 }}>
+      <DialogActions sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider', gap: 1.5, justifyContent: 'flex-end' }}>
         <Button 
-          fullWidth 
-          variant="text" 
-          onClick={handleClose}
+          onClick={handleClose} 
+          variant="outlined"
           sx={{ 
-            textTransform: 'none', 
-            borderRadius: 2, 
-            fontWeight: 700,
-            bgcolor: '#c13a25ff',
-            color: 'primary.contrastText', 
-            py: 1,
-            '&:hover': { bgcolor: '#ab2b17ff' }
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+            px: 3,
+            borderColor: 'divider',
+            color: 'text.secondary'
           }}
         >
-          Descartar
+          Cancelar
         </Button>
         <Button 
-          fullWidth 
-          variant="contained" 
-          onClick={handleSubmit}
-          disableElevation
+          onClick={handleSubmit} 
+          variant="contained"
           sx={{ 
-            textTransform: 'none', 
-            borderRadius: 2, 
-            fontWeight: 700, 
-            bgcolor: 'primary.main',
-            color: '#fff', 
-            py: 1,
-            '&:hover': { bgcolor: 'primary.dark' }
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 600,
+            px: 4,
+            background: isEditing ? 'primary.main' : 'success.main',
+            boxShadow: 'none'
           }}
         >
-          {initialData ? "Salvar Alterações" : "Criar Registro"}
+          {isEditing ? 'Salvar Alterações' : `Cadastrar ${title}`}
         </Button>
       </DialogActions>
     </Dialog>

@@ -28,7 +28,7 @@ const clientConfig = {
                      {value}
                   </Typography>
                   <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500 }}>
-                     CPF: {row.cpf}
+                     CPF: {row.cpf || 'Não informado'}
                   </Typography>
                </Box>
             </Stack>
@@ -41,16 +41,6 @@ const clientConfig = {
          render: (value) => (
             <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', fontWeight: 500 }}>
                {value ? new Date(value).toLocaleDateString('pt-BR') : '-'}
-            </Typography>
-         )
-      },
-      { 
-         id: 'sexo', 
-         label: 'GÊNERO', 
-         align: 'center',
-         render: (value) => (
-            <Typography sx={{ color: 'text.primary', fontSize: '0.875rem', fontWeight: 600 }}>
-               {value === 'M' ? 'Masculino' : value === 'F' ? 'Feminino' : value}
             </Typography>
          )
       },
@@ -77,19 +67,7 @@ const clientConfig = {
    fields: [
       { id: 'nome', label: 'Nome Completo', type: 'text', placeholder: 'Ex: João Silva', halfWidth: false },
       { id: 'cpf', label: 'CPF', type: 'text', placeholder: '000.000.000-00', halfWidth: true },
-      { id: 'rg', label: 'RG', type: 'text', placeholder: 'Ex: 12.345.678-9', halfWidth: true },
-      { id: 'data_nascimento', label: 'Data de Nascimento', type: 'date', halfWidth: true },
-      { 
-         id: 'sexo', 
-         label: 'Gênero', 
-         type: 'select', 
-         options: [
-            { value: 'M', label: 'Masculino' },
-            { value: 'F', label: 'Feminino' },
-            { value: 'O', label: 'Outro' }
-         ], 
-         halfWidth: true 
-      }
+      { id: 'data_nascimento', label: 'Data de Nascimento', type: 'date', halfWidth: true }
    ]
 };
 
