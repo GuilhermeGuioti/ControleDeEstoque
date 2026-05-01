@@ -1,125 +1,191 @@
 import React, { useState } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, AppBar, Toolbar, Typography, IconButton, Avatar, Stack, Divider, useTheme, alpha } from '@mui/material';
+import {
+  Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
+  AppBar, Toolbar, Typography, IconButton, Avatar, Stack, Divider, useTheme, alpha, Tooltip
+} from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import BuildIcon from '@mui/icons-material/Build';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import PeopleIcon from '@mui/icons-material/People';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LogoutIcon from '@mui/icons-material/Logout';
-import SettingsIcon from '@mui/icons-material/Settings';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import { BRAND_GRADIENT, BRAND_GRADIENT_SOFT } from '../style/theme';
 
-const DRAWER_WIDTH = 260;
+const DRAWER_WIDTH = 268;
 
 const menuItems = [
-  { id: 0, label: 'Dashboard', icon: <DashboardIcon /> },
-  { id: 1, label: 'PDV / Vendas', icon: <PointOfSaleIcon /> },
-  { id: 2, label: 'Estoque', icon: <InventoryIcon /> },
-  { id: 3, label: 'Serviços', icon: <BuildIcon /> },
-  { id: 4, label: 'Clientes', icon: <PeopleIcon /> },
+  { id: 0, label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
+  { id: 1, label: 'PDV / Vendas', icon: <PointOfSaleIcon fontSize="small" /> },
+  { id: 2, label: 'Estoque', icon: <InventoryIcon fontSize="small" /> },
+  { id: 3, label: 'Serviços', icon: <ContentCutIcon fontSize="small" /> },
+  { id: 4, label: 'Clientes', icon: <PeopleIcon fontSize="small" /> },
 ];
 
 const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout }) => {
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ 
-          width: 42, 
-          height: 42, 
-          borderRadius: 2, 
-          bgcolor: 'primary.main',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '1.2rem' }}>B</Typography>
-        </Box>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2, color: 'text.primary' }}>
-            Bella Studio
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Gestão de Salão
-          </Typography>
-        </Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Brand header */}
+      <Box sx={{ px: 2.5, py: 3 }}>
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Box sx={{
+            width: 44, height: 44, borderRadius: 2.5,
+            background: BRAND_GRADIENT,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(147,51,234,0.4)',
+            flexShrink: 0,
+          }}>
+            <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 22 }} />
+          </Box>
+          <Box>
+            <Typography sx={{
+              fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.1,
+              background: BRAND_GRADIENT, WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>
+              Bella Studio
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+              Gestão de Salão
+            </Typography>
+          </Box>
+        </Stack>
       </Box>
 
-      <Divider sx={{ mx: 2 }} />
+      <Divider sx={{ mx: 2, mb: 1 }} />
 
-      <List sx={{ flex: 1, px: 2, py: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              selected={currentTab === item.id}
-              onClick={() => onTabChange(item.id)}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                '&.Mui-selected': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.12),
+      {/* Navigation */}
+      <List sx={{ flex: 1, px: 1.5, py: 1 }}>
+        {menuItems.map((item) => {
+          const isActive = currentTab === item.id;
+          return (
+            <ListItem key={item.id} disablePadding sx={{ mb: 0.5, position: 'relative' }}>
+              {isActive && (
+                <Box sx={{
+                  position: 'absolute',
+                  left: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 3,
+                  height: 28,
+                  borderRadius: '0 4px 4px 0',
+                  background: BRAND_GRADIENT,
+                  zIndex: 1,
+                }} />
+              )}
+              <ListItemButton
+                onClick={() => onTabChange(item.id)}
+                sx={{
+                  borderRadius: 2,
+                  py: 1.25,
+                  pl: 2,
+                  ml: isActive ? 0.5 : 0,
+                  background: isActive ? BRAND_GRADIENT_SOFT : 'transparent',
                   '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.16),
+                    background: isActive
+                      ? BRAND_GRADIENT_SOFT
+                      : alpha(theme.palette.primary.main, 0.04),
                   },
-                },
-              }}
-            >
-              <ListItemIcon sx={{ 
-                minWidth: 40,
-                color: currentTab === item.id ? 'primary.main' : 'text.secondary'
-              }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.label} 
-                primaryTypographyProps={{
-                  fontWeight: currentTab === item.id ? 600 : 400,
-                  color: currentTab === item.id ? 'primary.main' : 'text.primary'
                 }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
+              >
+                <ListItemIcon sx={{
+                  minWidth: 36,
+                  color: isActive ? 'primary.main' : 'text.secondary',
+                  transition: 'color 0.2s',
+                }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontSize: '0.875rem',
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? 'primary.main' : 'text.primary',
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
 
       <Divider sx={{ mx: 2 }} />
 
+      {/* User section */}
       <Box sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2, p: 1.5, bgcolor: 'background.default', borderRadius: 2 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36, fontSize: '0.85rem' }}>KM</Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-              Katrine
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Administradora
-            </Typography>
-          </Box>
-        </Stack>
+        <Box sx={{
+          p: 1.5, borderRadius: 2.5, mb: 1.5,
+          bgcolor: alpha(theme.palette.primary.main, 0.06),
+          border: '1px solid',
+          borderColor: alpha(theme.palette.primary.main, 0.12),
+        }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Avatar sx={{
+              background: BRAND_GRADIENT,
+              width: 36, height: 36,
+              fontSize: '0.8rem', fontWeight: 800,
+              boxShadow: '0 2px 8px rgba(147,51,234,0.35)',
+            }}>
+              KM
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2, color: 'text.primary' }}>
+                Katrine
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                Administradora
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
 
         <Stack direction="row" spacing={1}>
-          <IconButton 
-            onClick={toggleTheme}
-            size="small"
-            sx={{ flex: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
-          >
-            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
-          <IconButton 
-            onClick={onLogout}
-            size="small"
-            sx={{ flex: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider', color: 'error.main' }}
-          >
-            <LogoutIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title={mode === 'dark' ? 'Modo Claro' : 'Modo Escuro'} placement="top">
+            <IconButton
+              onClick={toggleTheme}
+              size="small"
+              sx={{
+                flex: 1, borderRadius: 2,
+                border: '1px solid', borderColor: 'divider',
+                color: 'text.secondary',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  bgcolor: alpha(theme.palette.primary.main, 0.06),
+                },
+                transition: 'all 0.2s',
+              }}
+            >
+              {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Sair" placement="top">
+            <IconButton
+              onClick={onLogout}
+              size="small"
+              sx={{
+                flex: 1, borderRadius: 2,
+                border: '1px solid', borderColor: 'divider',
+                color: 'text.secondary',
+                '&:hover': {
+                  borderColor: 'error.main',
+                  color: 'error.main',
+                  bgcolor: alpha(theme.palette.error.main, 0.06),
+                },
+                transition: 'all 0.2s',
+              }}
+            >
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </Box>
     </Box>
@@ -127,37 +193,50 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <AppBar 
-        position="fixed" 
-        sx={{ 
-          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` }, 
+      <AppBar
+        position="fixed"
+        sx={{
+          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
           ml: { sm: `${DRAWER_WIDTH}px` },
           bgcolor: 'background.paper',
           color: 'text.primary',
           boxShadow: 'none',
           borderBottom: '1px solid',
-          borderColor: 'divider'
+          borderColor: 'divider',
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ gap: 2 }}>
           <IconButton
             color="inherit"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ display: { sm: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600 }}>
-            {menuItems.find(m => m.id === currentTab)?.label}
-          </Typography>
+
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}>
+            <Box sx={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: BRAND_GRADIENT,
+              display: { xs: 'none', sm: 'block' },
+            }} />
+            <Typography variant="h6" noWrap sx={{ fontWeight: 700, fontSize: '1rem' }}>
+              {menuItems.find(m => m.id === currentTab)?.label}
+            </Typography>
+          </Stack>
+
+          <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', gap: 1 }}>
+            <Tooltip title={mode === 'dark' ? 'Modo Claro' : 'Modo Escuro'}>
+              <IconButton size="small" onClick={toggleTheme} color="inherit">
+                {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Toolbar>
       </AppBar>
 
-      <Box
-        component="nav"
-        sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -165,7 +244,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH },
+            '& .MuiDrawer-paper': { width: DRAWER_WIDTH },
           }}
         >
           {drawer}
@@ -174,13 +253,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: DRAWER_WIDTH,
-              borderRight: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'background.paper'
-            },
+            '& .MuiDrawer-paper': { width: DRAWER_WIDTH },
           }}
           open
         >
@@ -190,13 +263,13 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
 
       <Box
         component="main"
-        sx={{ 
-          flexGrow: 1, 
-          p: 3, 
+        sx={{
+          flexGrow: 1,
+          p: { xs: 2, sm: 3 },
           width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
           mt: '64px',
           bgcolor: 'background.default',
-          minHeight: 'calc(100vh - 64px)'
+          minHeight: 'calc(100vh - 64px)',
         }}
       >
         {children}

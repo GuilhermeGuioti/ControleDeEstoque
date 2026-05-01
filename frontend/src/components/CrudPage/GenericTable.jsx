@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, 
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, IconButton, Stack, CircularProgress, Typography,
-  TableSortLabel, Button
+  TableSortLabel, Tooltip, Box, alpha
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import { useTheme } from '@mui/material/styles';
 
-const DataTable = ({ 
-  columns = [], 
-  data = [], 
+const DataTable = ({
+  columns = [],
+  data = [],
   loading = false,
-  onEdit, 
+  onEdit,
   onDelete,
   onQuickExit,
   showQuickExit = false,
-  emptyMessage = "Nenhum registro encontrado."
+  emptyMessage = 'Nenhum registro encontrado.',
 }) => {
+  const theme = useTheme();
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
 
@@ -27,94 +29,146 @@ const DataTable = ({
     setOrderBy(property);
   };
 
-  const descendingComparator = (a, b, orderBy) => {
-    if (b[orderBy] < a[orderBy]) return -1;
-    if (b[orderBy] > a[orderBy]) return 1;
+  const sortedData = [...data].sort((a, b) => {
+    if (!orderBy) return 0;
+    const va = a[orderBy];
+    const vb = b[orderBy];
+    if (vb < va) return order === 'desc' ? -1 : 1;
+    if (vb > va) return order === 'desc' ? 1 : -1;
     return 0;
-  };
+  });
 
-  const getComparator = (order, orderBy) => {
-    return order === 'desc'
-      ? (a, b) => descendingComparator(a, b, orderBy)
-      : (a, b) => -descendingComparator(a, b, orderBy);
-  };
-
-  // Ordena os dados antes de renderizar
-  const sortedData = [...data].sort(getComparator(order, orderBy));
+  const hasActions = onEdit || onDelete || (showQuickExit && onQuickExit);
 
   return (
-    <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, mt: 3, position: 'relative' }}>
+    <TableContainer
+      component={Paper}
+      elevation={0}
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 3,
+        mt: 2,
+        overflow: 'hidden',
+      }}
+    >
       <Table>
-        <TableHead sx={{ bgcolor: 'background.default' }}>
+        <TableHead>
           <TableRow>
             {columns.map((col) => (
-              <TableCell 
-                key={col.id} 
+              <TableCell
+                key={col.id}
                 align={col.align || 'left'}
                 sortDirection={orderBy === col.id ? order : false}
-                sx={{ color: 'text.secondary', fontWeight: 800, fontSize: '0.65rem', letterSpacing: '1px', textTransform: 'uppercase' }}
               >
                 <TableSortLabel
                   active={orderBy === col.id}
                   direction={orderBy === col.id ? order : 'asc'}
                   onClick={() => handleRequestSort(col.id)}
+                  sx={{
+                    '& .MuiTableSortLabel-icon': {
+                      color: `${theme.palette.primary.main} !important`,
+                      opacity: orderBy === col.id ? 1 : 0.3,
+                    },
+                  }}
                 >
                   {col.label}
                 </TableSortLabel>
               </TableCell>
             ))}
-            {(onEdit || onDelete || onQuickExit) && (
-              <TableCell sx={{ color: 'text.secondary', fontWeight: 800, fontSize: '0.65rem', textAlign: 'center' }}>AÇÕES</TableCell>
+            {hasActions && (
+              <TableCell align="center">Ações</TableCell>
             )}
           </TableRow>
         </TableHead>
-        
+
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={columns.length + 1} sx={{ py: 10, textAlign: 'center' }}>
-                <CircularProgress size={24} sx={{ color: 'primary.main' }} />
+              <TableCell colSpan={columns.length + (hasActions ? 1 : 0)} sx={{ py: 10, textAlign: 'center', border: 'none' }}>
+                <CircularProgress size={28} sx={{ color: 'primary.main' }} />
               </TableCell>
             </TableRow>
-          ) : sortedData.length === 0 ? ( 
+          ) : sortedData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length + 1} sx={{ py: 10, textAlign: 'center' }}>
-                <Typography variant="body2" color="text.secondary">{emptyMessage}</Typography>
+              <TableCell colSpan={columns.length + (hasActions ? 1 : 0)} sx={{ py: 10, textAlign: 'center', border: 'none' }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                  {emptyMessage}
+                </Typography>
               </TableCell>
             </TableRow>
           ) : (
-            sortedData.map((row, index) => ( 
-              <TableRow key={row.id || index} sx={{ '&:hover': { bgcolor: 'background.default' }, transition: '0.2s' }}>
+            sortedData.map((row, index) => (
+              <TableRow
+                key={row.id || index}
+                sx={{
+                  transition: 'background-color 0.15s',
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+                  '&:last-child td': { border: 'none' },
+                }}
+              >
                 {columns.map((col) => (
-                  <TableCell key={col.id} align={col.align || 'left'} sx={{ fontSize: '0.85rem', color: 'text.primary' }}>
+                  <TableCell key={col.id} align={col.align || 'left'} sx={{ color: 'text.primary' }}>
                     {col.render ? col.render(row[col.id], row) : row[col.id]}
                   </TableCell>
                 ))}
-                
-                {(onEdit || onDelete || onQuickExit) && (
-                  <TableCell>
-                    <Stack direction="row" spacing={1} justifyContent="center">
+
+                {hasActions && (
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={0.5} justifyContent="center">
                       {showQuickExit && onQuickExit && (
-                        <Button 
-                          size="small" 
-                          variant="outlined"
-                          color="primary"
-                          startIcon={<RemoveCircleOutlineIcon />}
-                          onClick={() => onQuickExit(row)}
-                          sx={{ fontSize: '0.7rem', textTransform: 'none', py: 0.5, px: 1, minWidth: 'auto' }}
-                        >
-                          Saída
-                        </Button>
+                        <Tooltip title="Saída rápida" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => onQuickExit(row)}
+                            sx={{
+                              color: 'warning.main',
+                              '&:hover': {
+                                bgcolor: alpha('#f59e0b', 0.1),
+                                transform: 'scale(1.1)',
+                              },
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            <RemoveCircleOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       )}
                       {onEdit && (
-                        <IconButton size="small" sx={{ color: 'primary.main', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => onEdit(row)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title="Editar" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(row)}
+                            sx={{
+                              color: 'primary.main',
+                              '&:hover': {
+                                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                transform: 'scale(1.1)',
+                              },
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       )}
                       {onDelete && (
-                        <IconButton size="small" sx={{ color: '#d32f2f', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => onDelete(row.id)}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        <Tooltip title="Excluir" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => onDelete(row.id)}
+                            sx={{
+                              color: 'error.main',
+                              '&:hover': {
+                                bgcolor: alpha('#ef4444', 0.1),
+                                transform: 'scale(1.1)',
+                              },
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       )}
                     </Stack>
                   </TableCell>
