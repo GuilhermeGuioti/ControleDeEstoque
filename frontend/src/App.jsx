@@ -25,15 +25,13 @@ function App() {
   const toggleTheme = () => setMode((prev) => (prev === "light" ? "dark" : "light"));
 
   const handleLogin = async (username, password) => {
-    // TODO: reativar quando o backend tiver um usuário cadastrado
-    // const formData = new URLSearchParams();
-    // formData.append("username", username);
-    // formData.append("password", password);
-    // const response = await api.post("/login/token", formData, {
-    //   headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    // });
-    // localStorage.setItem("authToken", response.data.access_token);
-    if (!username || !password) throw new Error("Preencha email e senha");
+    const formData = new URLSearchParams();
+    formData.append("username", username);
+    formData.append("password", password);
+    const response = await api.post("/login/token", formData, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    localStorage.setItem("authToken", response.data.access_token);
     localStorage.setItem("isLoggedIn", "true");
     setIsLoggedIn(true);
   };
@@ -46,9 +44,8 @@ function App() {
   };
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn");
     const token = localStorage.getItem("authToken");
-    if (loggedIn === "true" && token) setIsLoggedIn(true);
+    if (token) setIsLoggedIn(true);
   }, []);
 
   const notify = (severity, message) => setNotification({ open: true, severity, message });
@@ -63,7 +60,7 @@ function App() {
     products.fetchData();
     services.fetchData();
     clients.fetchData();
-    if (currentTab === 5) vendas.fetchData();
+    if (currentTab === 0 || currentTab === 5) vendas.fetchData();
   }, [isLoggedIn, currentTab]);
 
   const handleQuickExit = (item, quantity) => {
@@ -103,6 +100,7 @@ function App() {
             products={products.data}
             services={services.data}
             clients={clients.data}
+            vendas={vendas.data}
             onNavigate={handleNavigate}
           />
         )}
@@ -121,6 +119,7 @@ function App() {
             vendas={vendas.data}
             clients={clients.data}
             products={products.data}
+            services={services.data}
             loading={vendas.loading}
             onDelete={vendas.handleDelete}
           />

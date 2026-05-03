@@ -10,6 +10,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
 import PersonIcon from '@mui/icons-material/Person';
 import { BRAND_GRADIENT } from '../style/theme';
 
@@ -31,7 +32,7 @@ const PAYMENT_COLORS = {
   'Cartão de Débito': '#6366f1',
 };
 
-const SaleRow = ({ venda, clients, products, onDelete }) => {
+const SaleRow = ({ venda, clients, products, services, onDelete }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
 
@@ -143,23 +144,31 @@ const SaleRow = ({ venda, clients, products, onDelete }) => {
               </Typography>
               <Stack spacing={0.75}>
                 {venda.itens?.length > 0 ? venda.itens.map((item, idx) => {
-                  const produto = products.find(p => p.id === item.produto_id);
+                  const isServico = item.servico_id != null;
+                  const nome = isServico
+                    ? services.find(s => s.id === item.servico_id)?.nome || `Serviço #${item.servico_id}`
+                    : products.find(p => p.id === item.produto_id)?.nome || `Produto #${item.produto_id}`;
                   return (
                     <Stack key={idx} direction="row" alignItems="center" justifyContent="space-between">
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Avatar sx={{
                           width: 24, height: 24, borderRadius: 1,
-                          bgcolor: (t) => alpha(t.palette.warning.main, 0.1),
-                          color: 'warning.main', fontSize: 12,
+                          bgcolor: isServico ? alpha('#ec4899', 0.1) : (t) => alpha(t.palette.warning.main, 0.1),
+                          color: isServico ? '#ec4899' : 'warning.main',
+                          fontSize: 12,
                         }}>
-                          <ShoppingCartIcon sx={{ fontSize: 12 }} />
+                          {isServico
+                            ? <ContentCutIcon sx={{ fontSize: 12 }} />
+                            : <ShoppingCartIcon sx={{ fontSize: 12 }} />
+                          }
                         </Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {produto?.nome || `Produto #${item.produto_id}`}
-                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{nome}</Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                           × {item.quantidade}
                         </Typography>
+                        {isServico && (
+                          <Typography variant="caption" sx={{ color: '#ec4899', fontWeight: 600 }}>(serviço)</Typography>
+                        )}
                       </Stack>
                       <Typography variant="body2" sx={{ fontWeight: 700 }}>
                         {FMT_BRL(item.preco_unitario * item.quantidade)}
@@ -185,7 +194,7 @@ const SaleRow = ({ venda, clients, products, onDelete }) => {
   );
 };
 
-const VendasPage = ({ vendas = [], clients = [], products = [], loading = false, onDelete }) => {
+const VendasPage = ({ vendas = [], clients = [], products = [], services = [], loading = false, onDelete }) => {
   const totalHoje = vendas.filter(v => {
     const d = new Date(v.data_venda);
     const hoje = new Date();
@@ -273,6 +282,7 @@ const VendasPage = ({ vendas = [], clients = [], products = [], loading = false,
                     venda={venda}
                     clients={clients}
                     products={products}
+                    services={services}
                     onDelete={onDelete}
                   />
                 ))

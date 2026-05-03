@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9c27b0"/>
+      <stop offset="100%" style="stop-color:#e91e8c"/>
+    </linearGradient>
+  </defs>
+  <!-- Fundo circular com gradiente -->
+  <circle cx="50" cy="50" r="50" fill="url(#bg)"/>
+  <!-- Tesoura - lâmina superior -->
+  <line x1="30" y1="28" x2="62" y2="60" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <!-- Tesoura - lâmina inferior -->
+  <line x1="42" y1="28" x2="62" y2="60" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <!-- Cabo superior -->
+  <ellipse cx="24" cy="24" rx="9" ry="6" fill="none" stroke="white" stroke-width="4" transform="rotate(-45 24 24)"/>
+  <!-- Cabo inferior -->
+  <ellipse cx="36" cy="24" rx="9" ry="6" fill="none" stroke="white" stroke-width="4" transform="rotate(-45 36 24)"/>
+  <!-- Ponto de pivô -->
+  <circle cx="37" cy="37" r="3" fill="white"/>
+  <!-- Estrelinhas decorativas -->
+  <circle cx="68" cy="28" r="3" fill="white" opacity="0.8"/>
+  <circle cx="76" cy="40" r="2" fill="white" opacity="0.6"/>
+  <circle cx="72" cy="20" r="2" fill="white" opacity="0.6"/>
+  <!-- Florzinha decorativa -->
+  <circle cx="68" cy="72" r="4" fill="white" opacity="0.9"/>
+  <circle cx="60" cy="68" r="3" fill="white" opacity="0.7"/>
+  <circle cx="76" cy="68" r="3" fill="white" opacity="0.7"/>
+  <circle cx="60" cy="76" r="3" fill="white" opacity="0.7"/>
+  <circle cx="76" cy="76" r="3" fill="white" opacity="0.7"/>
+</svg>
