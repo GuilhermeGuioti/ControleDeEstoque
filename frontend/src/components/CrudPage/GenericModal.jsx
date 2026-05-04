@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogContent, DialogActions,
-  Box, Typography, TextField, Button, Stack, MenuItem, alpha
+  Box, Typography, TextField, Button, Stack, MenuItem, alpha, useTheme
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { BRAND_GRADIENT } from '../../style/theme';
 
 const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, onUpdate }) => {
+  const theme = useTheme();
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
@@ -30,7 +31,7 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
     handleClose();
   };
 
-  const headerColor = isEditing ? '#9333ea' : '#10b981';
+  const headerColor = isEditing ? theme.palette.primary.main : '#10b981';
   const headerGradient = isEditing
     ? BRAND_GRADIENT
     : 'linear-gradient(135deg, #10b981 0%, #059669 100%)';

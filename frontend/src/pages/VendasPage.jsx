@@ -153,8 +153,8 @@ const SaleRow = ({ venda, clients, products, services, onDelete }) => {
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Avatar sx={{
                           width: 24, height: 24, borderRadius: 1,
-                          bgcolor: isServico ? alpha('#ec4899', 0.1) : (t) => alpha(t.palette.warning.main, 0.1),
-                          color: isServico ? '#ec4899' : 'warning.main',
+                          bgcolor: isServico ? (t) => alpha(t.palette.primary.main, 0.1) : (t) => alpha(t.palette.warning.main, 0.1),
+                          color: isServico ? 'primary.main' : 'warning.main',
                           fontSize: 12,
                         }}>
                           {isServico
@@ -167,7 +167,7 @@ const SaleRow = ({ venda, clients, products, services, onDelete }) => {
                           × {item.quantidade}
                         </Typography>
                         {isServico && (
-                          <Typography variant="caption" sx={{ color: '#ec4899', fontWeight: 600 }}>(serviço)</Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>(serviço)</Typography>
                         )}
                       </Stack>
                       <Typography variant="body2" sx={{ fontWeight: 700 }}>

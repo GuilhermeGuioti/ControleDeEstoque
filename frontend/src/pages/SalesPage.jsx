@@ -403,7 +403,7 @@ const SalesPage = ({
                           sx={{
                             cursor: "pointer",
                             transition: "background 0.15s",
-                            "&:hover": { bgcolor: alpha("#ec4899", 0.04) },
+                            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) },
                             "&:last-child td": { border: "none" },
                           }}
                           onClick={() => addToCart(service, "service")}
@@ -419,8 +419,11 @@ const SalesPage = ({
                                   width: 34,
                                   height: 34,
                                   borderRadius: 1.5,
-                                  bgcolor: alpha("#ec4899", 0.1),
-                                  color: "#ec4899",
+                                  bgcolor: alpha(
+                                    theme.palette.primary.main,
+                                    0.1,
+                                  ),
+                                  color: "primary.main",
                                   fontSize: 16,
                                 }}
                               >
@@ -456,11 +459,13 @@ const SalesPage = ({
                                 e.stopPropagation();
                                 addToCart(service, "service");
                               }}
-                              sx={{
-                                bgcolor: alpha("#ec4899", 0.1),
-                                color: "#ec4899",
-                                "&:hover": { bgcolor: alpha("#ec4899", 0.2) },
-                              }}
+                                sx={{
+                                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                  color: "primary.main",
+                                  "&:hover": {
+                                    bgcolor: alpha(theme.palette.primary.main, 0.2),
+                                  },
+                                }}
                             >
                               <AddIcon fontSize="small" />
                             </IconButton>
@@ -987,15 +992,15 @@ const SalesPage = ({
                     >
                       ×{item.quantidade}
                     </Typography>
-                    {item.type === "service" && (
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        sx={{ ml: 0.5, color: "#ec4899" }}
-                      >
-                        (serviço)
-                      </Typography>
-                    )}
+                        {item.type === "service" && (
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{ ml: 0.5, color: "text.secondary" }}
+                          >
+                            (serviço)
+                          </Typography>
+                        )}
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>
                     {FMT_BRL(item.preco * item.quantidade)}

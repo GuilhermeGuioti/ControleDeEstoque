@@ -42,7 +42,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
             width: 44, height: 44, borderRadius: 2.5,
             background: BRAND_GRADIENT,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(147,51,234,0.4)',
+            boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.4)}`,
             flexShrink: 0,
           }}>
             <AutoAwesomeIcon sx={{ color: '#fff', fontSize: 22 }} />
@@ -134,7 +134,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
               background: BRAND_GRADIENT,
               width: 36, height: 36,
               fontSize: '0.8rem', fontWeight: 800,
-              boxShadow: '0 2px 8px rgba(147,51,234,0.35)',
+              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.35)}`,
             }}>
               KM
             </Avatar>

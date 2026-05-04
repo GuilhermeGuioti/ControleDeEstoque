@@ -44,12 +44,13 @@ const FMT_BRL = (v) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(v || 0);
 
 const PIE_COLORS = [
-  "#9333ea",
-  "#ec4899",
+  "#C9A227",
+  "#F5C842",
   "#3b82f6",
   "#10b981",
   "#f59e0b",
@@ -86,7 +87,7 @@ const STAT_CARDS = [
     title: "Clientes",
     icon: PeopleIcon,
     gradient: BRAND_GRADIENT,
-    shadow: "rgba(147,51,234,0.35)",
+    shadow: "rgba(201,162,39,0.35)",
     tab: 4,
   },
 ];
@@ -463,7 +464,7 @@ const DashboardPage = ({
           <ChartCard
             title="Pagamentos"
             icon={ReceiptLongIcon}
-            iconColor="#9333ea"
+            iconColor={theme.palette.primary.main}
           >
             <Box sx={{ p: 2, pt: 1.5 }}>
               {paymentData.length === 0 ? (
