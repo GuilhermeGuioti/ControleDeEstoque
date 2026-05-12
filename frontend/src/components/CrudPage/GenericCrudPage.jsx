@@ -53,7 +53,7 @@ const GenericPageCrud = ({
       >
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.5 }}>
-            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+            <Typography variant="h4" sx={{ fontWeight: 800, fontSize: { xs: '1.4rem', sm: '2.125rem' } }}>
               {title}
             </Typography>
             <Chip

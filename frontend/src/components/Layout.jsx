@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-  AppBar, Toolbar, Typography, IconButton, Avatar, Stack, Divider, useTheme, alpha, Tooltip
+  AppBar, Toolbar, Typography, IconButton, Avatar, Stack, Divider, useTheme,
+  alpha, Tooltip, BottomNavigation, BottomNavigationAction, Paper
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -14,6 +15,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { BRAND_GRADIENT, BRAND_GRADIENT_SOFT } from '../style/theme';
 
 const DRAWER_WIDTH = 268;
@@ -21,10 +23,18 @@ const DRAWER_WIDTH = 268;
 const menuItems = [
   { id: 0, label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
   { id: 1, label: 'PDV', icon: <PointOfSaleIcon fontSize="small" /> },
-  { id: 5, label: 'Histórico de Vendas', icon: <ReceiptLongIcon fontSize="small" /> },
+  { id: 5, label: 'Histórico', icon: <ReceiptLongIcon fontSize="small" /> },
   { id: 2, label: 'Estoque', icon: <InventoryIcon fontSize="small" /> },
   { id: 3, label: 'Serviços', icon: <ContentCutIcon fontSize="small" /> },
   { id: 4, label: 'Clientes', icon: <PeopleIcon fontSize="small" /> },
+];
+
+// Bottom nav shows 4 primary items + "Mais" for rest
+const bottomNavItems = [
+  { id: 0, label: 'Dashboard', icon: <DashboardIcon /> },
+  { id: 1, label: 'PDV', icon: <PointOfSaleIcon /> },
+  { id: 2, label: 'Estoque', icon: <InventoryIcon /> },
+  { id: -1, label: 'Mais', icon: <MoreHorizIcon /> },
 ];
 
 const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout }) => {
@@ -32,6 +42,17 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+
+  // For bottom nav: map currentTab to bottom nav index
+  const bottomNavValue = bottomNavItems.find(i => i.id === currentTab)?.id ?? -1;
+
+  const handleBottomNav = (event, newValue) => {
+    if (newValue === -1) {
+      handleDrawerToggle();
+    } else {
+      onTabChange(newValue);
+    }
+  };
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -72,29 +93,20 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
             <ListItem key={item.id} disablePadding sx={{ mb: 0.5, position: 'relative' }}>
               {isActive && (
                 <Box sx={{
-                  position: 'absolute',
-                  left: 0,
-                  top: '50%',
+                  position: 'absolute', left: 0, top: '50%',
                   transform: 'translateY(-50%)',
-                  width: 3,
-                  height: 28,
-                  borderRadius: '0 4px 4px 0',
-                  background: BRAND_GRADIENT,
-                  zIndex: 1,
+                  width: 3, height: 28, borderRadius: '0 4px 4px 0',
+                  background: BRAND_GRADIENT, zIndex: 1,
                 }} />
               )}
               <ListItemButton
-                onClick={() => onTabChange(item.id)}
+                onClick={() => { onTabChange(item.id); setMobileOpen(false); }}
                 sx={{
-                  borderRadius: 2,
-                  py: 1.25,
-                  pl: 2,
+                  borderRadius: 2, py: 1.25, pl: 2,
                   ml: isActive ? 0.5 : 0,
                   background: isActive ? BRAND_GRADIENT_SOFT : 'transparent',
                   '&:hover': {
-                    background: isActive
-                      ? BRAND_GRADIENT_SOFT
-                      : alpha(theme.palette.primary.main, 0.04),
+                    background: isActive ? BRAND_GRADIENT_SOFT : alpha(theme.palette.primary.main, 0.04),
                   },
                 }}
               >
@@ -159,8 +171,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
                 border: '1px solid', borderColor: 'divider',
                 color: 'text.secondary',
                 '&:hover': {
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
+                  borderColor: 'primary.main', color: 'primary.main',
                   bgcolor: alpha(theme.palette.primary.main, 0.06),
                 },
                 transition: 'all 0.2s',
@@ -178,8 +189,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
                 border: '1px solid', borderColor: 'divider',
                 color: 'text.secondary',
                 '&:hover': {
-                  borderColor: 'error.main',
-                  color: 'error.main',
+                  borderColor: 'error.main', color: 'error.main',
                   bgcolor: alpha(theme.palette.error.main, 0.06),
                 },
                 transition: 'all 0.2s',
@@ -207,7 +217,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
           borderColor: 'divider',
         }}
       >
-        <Toolbar sx={{ gap: 2 }}>
+        <Toolbar sx={{ gap: 2, minHeight: { xs: 56, sm: 64 } }}>
           <IconButton
             color="inherit"
             edge="start"
@@ -223,15 +233,20 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
               background: BRAND_GRADIENT,
               display: { xs: 'none', sm: 'block' },
             }} />
-            <Typography variant="h6" noWrap sx={{ fontWeight: 700, fontSize: '1rem' }}>
+            <Typography variant="h6" noWrap sx={{ fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
               {menuItems.find(m => m.id === currentTab)?.label}
             </Typography>
           </Stack>
 
-          <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', gap: 0.5 }}>
             <Tooltip title={mode === 'dark' ? 'Modo Claro' : 'Modo Escuro'}>
               <IconButton size="small" onClick={toggleTheme} color="inherit">
                 {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Sair">
+              <IconButton size="small" onClick={onLogout} color="inherit">
+                <LogoutIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           </Box>
@@ -239,6 +254,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
       </AppBar>
 
       <Box component="nav" sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}>
+        {/* Mobile drawer (full menu via hamburger) */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -251,6 +267,7 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
         >
           {drawer}
         </Drawer>
+        {/* Desktop permanent drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -267,15 +284,52 @@ const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2, sm: 3 },
-          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
-          mt: '64px',
+          p: { xs: 1.5, sm: 3 },
+          width: { xs: '100%', sm: `calc(100% - ${DRAWER_WIDTH}px)` },
+          mt: { xs: '56px', sm: '64px' },
+          mb: { xs: '56px', sm: 0 }, // space for bottom nav on mobile
           bgcolor: 'background.default',
-          minHeight: 'calc(100vh - 64px)',
+          minHeight: { xs: 'calc(100vh - 56px - 56px)', sm: 'calc(100vh - 64px)' },
+          overflowX: 'hidden',
         }}
       >
         {children}
       </Box>
+
+      {/* Bottom Navigation — mobile only */}
+      <Paper
+        sx={{
+          display: { xs: 'block', sm: 'none' },
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1300,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
+        elevation={0}
+      >
+        <BottomNavigation
+          value={bottomNavValue}
+          onChange={handleBottomNav}
+          sx={{ height: 56 }}
+        >
+          {bottomNavItems.map((item) => (
+            <BottomNavigationAction
+              key={item.id}
+              label={item.label}
+              value={item.id}
+              icon={item.icon}
+              sx={{
+                minWidth: 0,
+                '&.Mui-selected': { color: 'primary.main' },
+                '& .MuiBottomNavigationAction-label': { fontSize: '0.65rem' },
+              }}
+            />
+          ))}
+        </BottomNavigation>
+      </Paper>
     </Box>
   );
 };

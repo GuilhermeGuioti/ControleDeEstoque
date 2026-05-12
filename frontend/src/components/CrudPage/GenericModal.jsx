@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogContent, DialogActions,
-  Box, Typography, TextField, Button, Stack, MenuItem, alpha, useTheme
+  Box, Typography, TextField, Button, Stack, MenuItem, alpha, useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -9,6 +10,7 @@ import { BRAND_GRADIENT } from '../../style/theme';
 
 const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, onUpdate }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
@@ -42,6 +44,7 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
+      fullScreen={isMobile}
       slotProps={{
         backdrop: {
           sx: { backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }
