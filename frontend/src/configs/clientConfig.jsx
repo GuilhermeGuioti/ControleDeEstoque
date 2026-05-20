@@ -73,8 +73,10 @@ const clientConfig = {
    ],
    fields: [
       { id: 'nome', label: 'Nome Completo', type: 'text', placeholder: 'Ex: João Silva' },
-      { id: 'cpf', label: 'CPF', type: 'text', placeholder: '000.000.000-00' },
-      { id: 'rg', label: 'RG', type: 'text', placeholder: 'Ex: 12.345.678-9' },
+      { id: 'cpf', label: 'CPF', type: 'text', mask: 'cpf', placeholder: '000.000.000-00' },
+      { id: 'rg', label: 'RG', type: 'text', mask: 'rg', placeholder: '00.000.000-0' },
+      { id: 'telefone', label: 'Telefone', type: 'text', mask: 'phone', placeholder: '(00) 00000-0000' },
+      { id: 'cep', label: 'CEP', type: 'text', mask: 'cep', placeholder: '00000-000' },
       { id: 'data_nascimento', label: 'Data de Nascimento', type: 'date' },
       {
          id: 'sexo', label: 'Sexo', type: 'select',

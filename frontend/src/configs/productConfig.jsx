@@ -104,7 +104,7 @@ const productConfig = {
       { id: 'nome', label: 'Nome do Produto', type: 'text', placeholder: 'Ex: Shampoo Matizador' },
       { id: 'categoria', label: 'Categoria', type: 'text', placeholder: 'Ex: Shampoo, Tintura, Óleo' },
       { id: 'quantidade', label: 'Quantidade', type: 'number', placeholder: '0' },
-      { id: 'preco', label: 'Preço (R$)', type: 'number', placeholder: '0.00' },
+      { id: 'preco', label: 'Preço', type: 'text', mask: 'currency', placeholder: 'R$ 0,00' },
       { id: 'fornecedor', label: 'Fornecedor', type: 'text', placeholder: 'Ex: Distribuidora X' },
    ],
 };

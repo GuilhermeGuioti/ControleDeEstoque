@@ -6,6 +6,11 @@ import {
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { BRAND_GRADIENT } from '../../style/theme';
+import {
+  applyMask,
+  parseCurrencyBRL,
+  formatCurrencyBRLFromNumber,
+} from '../../utils/masks';
 
 const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, onUpdate }) => {
   const theme = useTheme();
@@ -18,6 +23,25 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
   const handleChange = (id, value, type) => {
     const finalValue = type === 'number' && value !== '' ? Number(value) : value;
     setFormData(prev => ({ ...prev, [id]: finalValue }));
+  };
+
+  const handleMaskedChange = (field, rawValue) => {
+    if (field.mask === 'currency') {
+      const masked = applyMask('currency', rawValue);
+      const numeric = parseCurrencyBRL(masked);
+      setFormData(prev => ({ ...prev, [field.id]: numeric }));
+      return;
+    }
+    const masked = applyMask(field.mask, rawValue);
+    setFormData(prev => ({ ...prev, [field.id]: masked }));
+  };
+
+  const getFieldDisplayValue = (field) => {
+    const value = formData[field.id];
+    if (field.mask === 'currency') {
+      return formatCurrencyBRLFromNumber(value);
+    }
+    return value ?? '';
   };
 
   const isEditing = Boolean(initialData && (initialData.id || initialData._id));
@@ -108,12 +132,15 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
               </Typography>
               <TextField
                 fullWidth
-                type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                type={field.mask ? 'text' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
                 select={field.type === 'select'}
-                value={formData[field.id] ?? ''}
-                onChange={(e) => handleChange(field.id, e.target.value, field.type)}
+                value={field.mask ? getFieldDisplayValue(field) : (formData[field.id] ?? '')}
+                onChange={(e) => field.mask
+                  ? handleMaskedChange(field, e.target.value)
+                  : handleChange(field.id, e.target.value, field.type)}
                 InputLabelProps={field.type === 'date' ? { shrink: true } : undefined}
                 placeholder={field.placeholder}
+                inputMode={field.mask === 'currency' || field.mask === 'cpf' || field.mask === 'cnpj' || field.mask === 'cep' || field.mask === 'phone' ? 'numeric' : undefined}
                 size="medium"
               >
                 {field.type === 'select' && field.options?.map((option) => (

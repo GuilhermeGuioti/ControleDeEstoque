@@ -76,7 +76,7 @@ const serviceConfig = {
    fields: [
       { id: 'nome', label: 'Nome do Serviço', type: 'text', placeholder: 'Ex: Corte Americano' },
       { id: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Breve descrição do serviço' },
-      { id: 'preco', label: 'Preço (R$)', type: 'number', placeholder: '0.00' },
+      { id: 'preco', label: 'Preço', type: 'text', mask: 'currency', placeholder: 'R$ 0,00' },
       { id: 'duracao', label: 'Duração (Minutos)', type: 'text', placeholder: 'Ex: 30' },
    ],
 };
