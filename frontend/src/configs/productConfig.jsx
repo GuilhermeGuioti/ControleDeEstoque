@@ -2,7 +2,12 @@ import { Typography, Box, Stack, Avatar, Chip } from '@mui/material';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import { alpha } from '@mui/material/styles';
 
-const productConfig = {
+// productConfig é uma factory: recebe as listas de categorias/fornecedores/fabricantes
+// para popular os <select> dos campos id_categoria/id_fornecedor/id_fabricante.
+// Backend (ProdutoCreate): nome*, preco*, descricao?, id_categoria?, id_fornecedor?,
+//   id_fabricante?, quantidade_minima?, data_validade?, observacoes?
+// Quantidade em estoque vem separada de /produtos/estoque/resumo e é mesclada no App.
+const buildProductConfig = ({ categorias = [], fornecedores = [], fabricantes = [] } = {}) => ({
    statsIcon: InventoryIcon,
    columns: [
       {
@@ -28,7 +33,7 @@ const productConfig = {
                      {value}
                   </Typography>
                   <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500 }}>
-                     {row.fornecedor ? `Fornecedor: ${row.fornecedor}` : `ID: ${row.id}`}
+                     {row.fornecedor?.nome ? `Fornecedor: ${row.fornecedor.nome}` : `ID: ${String(row.id || '').slice(0, 8)}`}
                   </Typography>
                </Box>
             </Stack>
@@ -38,9 +43,9 @@ const productConfig = {
          id: 'categoria',
          label: 'CATEGORIA',
          align: 'left',
-         render: (value) => (
+         render: (_, row) => (
             <Chip
-               label={value || 'Sem categoria'}
+               label={row.categoria?.nome || 'Sem categoria'}
                size="small"
                sx={{
                   bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
@@ -55,22 +60,24 @@ const productConfig = {
          id: 'quantidade',
          label: 'QTD',
          align: 'center',
-         render: (value) => {
-            const isCritical = value <= 5;
+         render: (_, row) => {
+            const qtd = row.quantidade_total ?? 0;
+            const minimo = row.quantidade_minima ?? 0;
+            const isCritical = minimo > 0 && qtd <= minimo;
             return (
                <Box sx={{ textAlign: 'center' }}>
                   <Typography sx={{
                      fontWeight: 700, fontSize: '0.875rem',
                      color: isCritical ? 'warning.main' : 'text.primary',
                   }}>
-                     {value ?? 0}
+                     {qtd}
                   </Typography>
-                  {isCritical && value > 0 && (
+                  {isCritical && qtd > 0 && (
                      <Typography sx={{ fontSize: '0.65rem', color: 'warning.main', fontWeight: 600 }}>
                         Estoque baixo
                      </Typography>
                   )}
-                  {value === 0 && (
+                  {qtd === 0 && (
                      <Typography sx={{ fontSize: '0.65rem', color: 'error.main', fontWeight: 600 }}>
                         Esgotado
                      </Typography>
@@ -95,18 +102,31 @@ const productConfig = {
          align: 'left',
          render: (_, row) => (
             <Typography sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.875rem' }}>
-               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((row.quantidade || 0) * (row.preco || 0))}
+               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((row.quantidade_total || 0) * (row.preco || 0))}
             </Typography>
          )
       },
    ],
    fields: [
       { id: 'nome', label: 'Nome do Produto', type: 'text', placeholder: 'Ex: Shampoo Matizador' },
-      { id: 'categoria', label: 'Categoria', type: 'text', placeholder: 'Ex: Shampoo, Tintura, Óleo' },
-      { id: 'quantidade', label: 'Quantidade', type: 'number', placeholder: '0' },
-      { id: 'preco', label: 'Preço (R$)', type: 'number', placeholder: '0.00' },
-      { id: 'fornecedor', label: 'Fornecedor', type: 'text', placeholder: 'Ex: Distribuidora X' },
+      { id: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Breve descrição', multiline: true },
+      { id: 'preco', label: 'Preço', type: 'text', mask: 'currency', placeholder: 'R$ 0,00' },
+      {
+         id: 'id_categoria', label: 'Categoria', type: 'select',
+         options: categorias.map((c) => ({ value: c.id, label: c.nome })),
+      },
+      {
+         id: 'id_fornecedor', label: 'Fornecedor', type: 'select',
+         options: fornecedores.map((f) => ({ value: f.id, label: f.nome })),
+      },
+      {
+         id: 'id_fabricante', label: 'Fabricante', type: 'select',
+         options: fabricantes.map((f) => ({ value: f.id, label: f.nome })),
+      },
+      { id: 'quantidade_minima', label: 'Estoque Mínimo', type: 'number', placeholder: '0' },
+      { id: 'data_validade', label: 'Data de Validade', type: 'date' },
+      { id: 'observacoes', label: 'Observações', type: 'text', placeholder: 'Notas internas', multiline: true },
    ],
-};
+});
 
-export default productConfig;
+export default buildProductConfig;

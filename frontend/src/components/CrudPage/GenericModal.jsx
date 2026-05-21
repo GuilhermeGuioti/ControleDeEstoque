@@ -6,13 +6,44 @@ import {
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { BRAND_GRADIENT } from '../../style/theme';
+import {
+  applyMask,
+  unmask,
+  parseCurrencyBRL,
+  formatCurrencyBRLFromNumber,
+} from '../../utils/masks';
 
 const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, onUpdate }) => {
   const theme = useTheme();
   const [formData, setFormData] = useState({});
 
+  // Backend devolve valores crus (cpf "11111111111", data "2025-01-15T00:00:00").
+  // Aqui re-aplica máscara e normaliza data para YYYY-MM-DD aceito por <input type="date">.
+  const hydrateInitialData = (raw) => {
+    if (!raw) return {};
+    const data = { ...raw };
+    fields.forEach((field) => {
+      const value = data[field.id];
+      if (value === undefined || value === null || value === '') return;
+      if (field.mask && field.mask !== 'currency') {
+        data[field.id] = applyMask(field.mask, String(value));
+      } else if (field.type === 'date') {
+        const s = String(value);
+        if (s.includes('T')) data[field.id] = s.split('T')[0];
+        else if (s.includes(' ')) data[field.id] = s.split(' ')[0];
+      } else if (field.type === 'time') {
+        // backend devolve "HH:MM:SS", input HTML quer "HH:MM"
+        const s = String(value);
+        const parts = s.split(':');
+        if (parts.length >= 2) data[field.id] = `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+      }
+    });
+    return data;
+  };
+
   useEffect(() => {
-    if (open) setFormData(initialData || {});
+    if (open) setFormData(hydrateInitialData(initialData));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialData]);
 
   const handleChange = (id, value, type) => {
@@ -20,13 +51,51 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
     setFormData(prev => ({ ...prev, [id]: finalValue }));
   };
 
+  const handleMaskedChange = (field, rawValue) => {
+    if (field.mask === 'currency') {
+      const masked = applyMask('currency', rawValue);
+      const numeric = parseCurrencyBRL(masked);
+      setFormData(prev => ({ ...prev, [field.id]: numeric }));
+      return;
+    }
+    const masked = applyMask(field.mask, rawValue);
+    setFormData(prev => ({ ...prev, [field.id]: masked }));
+  };
+
+  const getFieldDisplayValue = (field) => {
+    const value = formData[field.id];
+    if (field.mask === 'currency') {
+      return formatCurrencyBRLFromNumber(value);
+    }
+    return value ?? '';
+  };
+
   const isEditing = Boolean(initialData && (initialData.id || initialData._id));
 
+  // Tira a formatação de campos mascarados (CPF, RG, CEP, telefone) antes de enviar.
+  // Backend persiste somente dígitos e colunas têm limite (varchar(11), varchar(9) etc.).
+  const buildPayload = () => {
+    const payload = { ...formData };
+    fields.forEach((field) => {
+      if (!field.mask) return;
+      if (field.mask === 'currency') return; // currency já está como número
+      const raw = payload[field.id];
+      if (raw === undefined || raw === null || raw === '') return;
+      payload[field.id] = unmask(field.mask, raw);
+    });
+    // remove campos vazios ('' -> null) para não enviar strings vazias para o backend
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] === '') payload[key] = null;
+    });
+    return payload;
+  };
+
   const handleSubmit = () => {
+    const payload = buildPayload();
     if (isEditing) {
-      onUpdate(formData.id || formData._id, formData);
+      onUpdate(payload.id || payload._id, payload);
     } else {
-      onSave(formData);
+      onSave(payload);
     }
     handleClose();
   };
@@ -48,7 +117,6 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
         }
       }}
     >
-      {/* Gradient header */}
       <Box sx={{
         p: 3, pb: 2.5,
         background: alpha(headerColor, 0.06),
@@ -57,7 +125,6 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Top accent line */}
         <Box sx={{
           position: 'absolute', top: 0, left: 0, right: 0, height: 3,
           background: headerGradient,
@@ -108,15 +175,20 @@ const GenericModal = ({ open, handleClose, title, fields, initialData, onSave, o
               </Typography>
               <TextField
                 fullWidth
-                type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                type={field.mask ? 'text' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : field.type === 'time' ? 'time' : 'text'}
                 select={field.type === 'select'}
-                value={formData[field.id] ?? ''}
-                onChange={(e) => handleChange(field.id, e.target.value, field.type)}
-                InputLabelProps={field.type === 'date' ? { shrink: true } : undefined}
+                value={field.mask ? getFieldDisplayValue(field) : (formData[field.id] ?? '')}
+                onChange={(e) => field.mask
+                  ? handleMaskedChange(field, e.target.value)
+                  : handleChange(field.id, e.target.value, field.type)}
+                InputLabelProps={(field.type === 'date' || field.type === 'time') ? { shrink: true } : undefined}
                 placeholder={field.placeholder}
+                inputMode={field.mask === 'currency' || field.mask === 'cpf' || field.mask === 'cnpj' || field.mask === 'cep' || field.mask === 'phone' ? 'numeric' : undefined}
                 size="medium"
+                multiline={field.multiline || false}
+                minRows={field.multiline ? 2 : undefined}
               >
-                {field.type === 'select' && field.options?.map((option) => (
+                {field.type === 'select' && (field.options || []).map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}
                   </MenuItem>

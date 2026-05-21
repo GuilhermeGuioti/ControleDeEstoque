@@ -41,6 +41,7 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import PersonIcon from "@mui/icons-material/Person";
 import { BRAND_GRADIENT } from "../style/theme";
 import api from "../services/api";
+import { applyMask } from "../utils/masks";
 
 const FMT_BRL = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -74,11 +75,10 @@ const SalesPage = ({
 
   const filteredProducts = useMemo(
     () =>
-      products.filter(
-        (p) =>
-          p.nome?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          p.quantidade > 0,
-      ),
+      products.filter((p) => {
+        const qtd = p.quantidade_total ?? p.quantidade ?? 0;
+        return p.nome?.toLowerCase().includes(searchTerm.toLowerCase()) && qtd > 0;
+      }),
     [products, searchTerm],
   );
   const filteredServices = useMemo(
@@ -90,11 +90,13 @@ const SalesPage = ({
   );
   const filteredClients = useMemo(() => {
     if (!clientSearch) return clients.slice(0, 10);
+    const term = clientSearch.toLowerCase();
+    const digits = clientSearch.replace(/\D/g, "");
     return clients
       .filter(
         (c) =>
-          c.nome?.toLowerCase().includes(clientSearch.toLowerCase()) ||
-          c.cpf?.includes(clientSearch),
+          c.nome?.toLowerCase().includes(term) ||
+          (digits && c.cpf?.includes(digits)),
       )
       .slice(0, 10);
   }, [clients, clientSearch]);
@@ -159,11 +161,12 @@ const SalesPage = ({
       return;
     }
 
+    // Backend (VendaCreate) espera id_cliente/id_produto/id_servico — NÃO os sufixos _id.
     const payload = {
-      cliente_id: selectedClient?.id || null,
+      id_cliente: selectedClient?.id || null,
       forma_pagamento: formaPagamento || null,
       itens: cart.map((i) => ({
-        ...(i.type === "product" ? { produto_id: i.id } : { servico_id: i.id }),
+        ...(i.type === "product" ? { id_produto: i.id } : { id_servico: i.id }),
         quantidade: i.quantidade,
         preco_unitario: i.preco,
       })),
@@ -178,10 +181,18 @@ const SalesPage = ({
       setIsCheckoutOpen(false);
       onSaleComplete?.();
     } catch (err) {
-      setCheckoutError(
-        err.response?.data?.detail ||
-          "Erro ao registrar venda. Tente novamente.",
-      );
+      const detail = err.response?.data?.detail;
+      let msg = "Erro ao registrar venda. Tente novamente.";
+      if (typeof detail === "string") msg = detail;
+      else if (Array.isArray(detail)) {
+        msg = detail
+          .map((d) => {
+            const f = Array.isArray(d.loc) ? d.loc.slice(1).join(".") : "";
+            return f ? `${f}: ${d.msg}` : d.msg;
+          })
+          .join("; ");
+      }
+      setCheckoutError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -353,7 +364,7 @@ const SalesPage = ({
                           </TableCell>
                           <TableCell align="center">
                             <Chip
-                              label={product.quantidade}
+                              label={product.quantidade_total ?? product.quantidade ?? 0}
                               size="small"
                               sx={{
                                 fontWeight: 700,
@@ -881,7 +892,7 @@ const SalesPage = ({
                     variant="caption"
                     sx={{ color: "text.secondary" }}
                   >
-                    CPF: {option.cpf || "—"}
+                    CPF: {option.cpf ? applyMask("cpf", option.cpf) : "—"}
                   </Typography>
                 </Box>
               </Stack>
@@ -922,7 +933,7 @@ const SalesPage = ({
                     variant="caption"
                     sx={{ color: "text.secondary" }}
                   >
-                    CPF: {selectedClient.cpf || "—"}
+                    CPF: {selectedClient.cpf ? applyMask("cpf", selectedClient.cpf) : "—"}
                   </Typography>
                 </Box>
               </Stack>

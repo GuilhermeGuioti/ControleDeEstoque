@@ -14,6 +14,10 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CategoryIcon from '@mui/icons-material/Category';
+import FactoryIcon from '@mui/icons-material/Factory';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import WarehouseIcon from '@mui/icons-material/Warehouse';
 import { BRAND_GRADIENT, BRAND_GRADIENT_SOFT } from '../style/theme';
 
 const DRAWER_WIDTH = 268;
@@ -22,9 +26,13 @@ const menuItems = [
   { id: 0, label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
   { id: 1, label: 'PDV', icon: <PointOfSaleIcon fontSize="small" /> },
   { id: 5, label: 'Histórico de Vendas', icon: <ReceiptLongIcon fontSize="small" /> },
-  { id: 2, label: 'Estoque', icon: <InventoryIcon fontSize="small" /> },
+  { id: 2, label: 'Produtos', icon: <InventoryIcon fontSize="small" /> },
+  { id: 6, label: 'Estoque (Lotes)', icon: <WarehouseIcon fontSize="small" /> },
   { id: 3, label: 'Serviços', icon: <ContentCutIcon fontSize="small" /> },
   { id: 4, label: 'Clientes', icon: <PeopleIcon fontSize="small" /> },
+  { id: 7, label: 'Categorias', icon: <CategoryIcon fontSize="small" /> },
+  { id: 8, label: 'Fabricantes', icon: <FactoryIcon fontSize="small" /> },
+  { id: 9, label: 'Fornecedores', icon: <LocalShippingIcon fontSize="small" /> },
 ];
 
 const Layout = ({ children, currentTab, onTabChange, mode, toggleTheme, onLogout }) => {

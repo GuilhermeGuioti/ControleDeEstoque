@@ -39,6 +39,7 @@ import {
   Area,
 } from "recharts";
 import { BRAND_GRADIENT } from "../style/theme";
+import { parseBackendDate } from "../utils/masks";
 
 const FMT_BRL = (v) =>
   new Intl.NumberFormat("pt-BR", {
@@ -267,13 +268,23 @@ const EmptyRow = ({ cols, text }) => (
 );
 
 const isToday = (dateStr) => {
-  const d = new Date(dateStr);
+  const d = parseBackendDate(dateStr);
+  if (!d) return false;
   const t = new Date();
   return (
     d.getDate() === t.getDate() &&
     d.getMonth() === t.getMonth() &&
     d.getFullYear() === t.getFullYear()
   );
+};
+
+// Formata uma Date em "YYYY-MM-DD" no fuso LOCAL.
+// toISOString() converte para UTC e quebra a comparação em horários de fim do dia.
+const localISODate = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 };
 
 const DashboardPage = ({
@@ -288,10 +299,11 @@ const DashboardPage = ({
     let stockValue = 0;
     let lowStockCount = 0;
     products.forEach((p) => {
-      stockValue += (p.quantidade || 0) * (p.preco || 0);
-      if ((p.quantidade || 0) <= (p.quantidade_minima || 5)) lowStockCount++;
+      const qtd = p.quantidade_total ?? p.quantidade ?? 0;
+      stockValue += qtd * (p.preco || 0);
+      if (qtd <= (p.quantidade_minima || 5)) lowStockCount++;
     });
-    const vendasHoje = vendas.filter((v) => isToday(v.data_venda));
+    const vendasHoje = vendas.filter((v) => isToday(v.criado_em ?? v.data_venda));
     const revenueHoje = vendasHoje.reduce(
       (s, v) => s + (v.valor_total || 0),
       0,
@@ -307,6 +319,18 @@ const DashboardPage = ({
 
   const last7Days = useMemo(() => {
     const days = [];
+    // Pré-indexa vendas por dia local (Venda.criado_em vem sem timezone do backend,
+    // então new Date() interpreta como horário local — correto).
+    const byDay = new Map();
+    vendas.forEach((v) => {
+      const d = parseBackendDate(v.criado_em ?? v.data_venda);
+      if (!d) return;
+      const key = localISODate(d);
+      const acc = byDay.get(key) || { total: 0, qtd: 0 };
+      acc.total += v.valor_total || 0;
+      acc.qtd += 1;
+      byDay.set(key, acc);
+    });
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -314,13 +338,9 @@ const DashboardPage = ({
         weekday: "short",
         day: "numeric",
       });
-      const dateStr = d.toISOString().split("T")[0];
-      const dayVendas = vendas.filter((v) => v.data_venda?.startsWith(dateStr));
-      days.push({
-        label,
-        total: dayVendas.reduce((s, v) => s + (v.valor_total || 0), 0),
-        qtd: dayVendas.length,
-      });
+      const key = localISODate(d);
+      const entry = byDay.get(key) || { total: 0, qtd: 0 };
+      days.push({ label, total: entry.total, qtd: entry.qtd });
     }
     return days;
   }, [vendas]);
@@ -337,14 +357,22 @@ const DashboardPage = ({
   const lowStock = useMemo(
     () =>
       products
-        .filter((p) => (p.quantidade || 0) <= (p.quantidade_minima || 5))
-        .sort((a, b) => (a.quantidade || 0) - (b.quantidade || 0))
+        .map((p) => ({ ...p, _qtd: p.quantidade_total ?? p.quantidade ?? 0 }))
+        .filter((p) => p._qtd <= (p.quantidade_minima || 5))
+        .sort((a, b) => a._qtd - b._qtd)
         .slice(0, 6),
     [products],
   );
 
   const recentSales = useMemo(
-    () => [...vendas].reverse().slice(0, 5),
+    () =>
+      [...vendas]
+        .sort((a, b) => {
+          const da = parseBackendDate(a.criado_em ?? a.data_venda)?.getTime() ?? 0;
+          const db = parseBackendDate(b.criado_em ?? b.data_venda)?.getTime() ?? 0;
+          return db - da;
+        })
+        .slice(0, 5),
     [vendas],
   );
 
@@ -584,24 +612,24 @@ const DashboardPage = ({
                         </TableCell>
                         <TableCell align="center">
                           <Chip
-                            label={item.quantidade ?? 0}
+                            label={item._qtd ?? item.quantidade_total ?? item.quantidade ?? 0}
                             size="small"
                             sx={{
                               fontWeight: 700,
                               fontSize: "0.68rem",
                               bgcolor: alpha(
-                                (item.quantidade ?? 0) === 0
+                                (item._qtd ?? item.quantidade_total ?? item.quantidade ?? 0) === 0
                                   ? "#ef4444"
                                   : "#f59e0b",
                                 0.1,
                               ),
                               color:
-                                (item.quantidade ?? 0) === 0
+                                (item._qtd ?? item.quantidade_total ?? item.quantidade ?? 0) === 0
                                   ? "#ef4444"
                                   : "#d97706",
                               border: "1px solid",
                               borderColor: alpha(
-                                (item.quantidade ?? 0) === 0
+                                (item._qtd ?? item.quantidade_total ?? item.quantidade ?? 0) === 0
                                   ? "#ef4444"
                                   : "#f59e0b",
                                 0.2,
@@ -612,7 +640,7 @@ const DashboardPage = ({
                         <TableCell align="right">
                           <Typography variant="body2" sx={{ fontWeight: 700 }}>
                             {FMT_BRL(
-                              (item.quantidade || 0) * (item.preco || 0),
+                              (item._qtd ?? item.quantidade_total ?? item.quantidade ?? 0) * (item.preco || 0),
                             )}
                           </Typography>
                         </TableCell>
@@ -662,7 +690,7 @@ const DashboardPage = ({
                           variant="body2"
                           sx={{ fontWeight: 700, color: "primary.main" }}
                         >
-                          #{String(v.id).padStart(4, "0")}
+                          #{String(v.id || "").slice(0, 8)}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -670,7 +698,7 @@ const DashboardPage = ({
                           variant="caption"
                           sx={{ color: "text.secondary" }}
                         >
-                          {new Date(v.data_venda).toLocaleString("pt-BR", {
+                          {parseBackendDate(v.criado_em ?? v.data_venda)?.toLocaleString("pt-BR", {
                             day: "2-digit",
                             month: "2-digit",
                             hour: "2-digit",

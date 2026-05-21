@@ -1,6 +1,9 @@
-import { Typography, Box, Stack, Avatar, Chip, MenuItem } from '@mui/material';
+import { Typography, Box, Stack, Avatar, Chip } from '@mui/material';
 import PersonIcon from '@mui/icons-material/PersonTwoTone';
 import { alpha } from '@mui/material/styles';
+import { applyMask } from '../utils/masks';
+
+const SEXO_LABELS = { M: 'Masculino', F: 'Feminino', O: 'Outro' };
 
 const clientConfig = {
    columns: [
@@ -27,7 +30,7 @@ const clientConfig = {
                      {value}
                   </Typography>
                   <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 500 }}>
-                     CPF: {row.cpf || 'Não informado'}
+                     CPF: {row.cpf ? applyMask('cpf', row.cpf) : 'Não informado'}
                   </Typography>
                </Box>
             </Stack>
@@ -49,7 +52,7 @@ const clientConfig = {
          align: 'center',
          render: (value) => (
             <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', fontWeight: 500, textAlign: 'center' }}>
-               {value || '—'}
+               {SEXO_LABELS[value] || value || '—'}
             </Typography>
          )
       },
@@ -71,17 +74,19 @@ const clientConfig = {
          )
       },
    ],
+   // Cliente no backend: nome*, cpf?, rg?, data_nascimento?, sexo? (varchar(1)).
+   // enderecos[] e telefones[] também são suportados mas tratados em telas separadas.
    fields: [
       { id: 'nome', label: 'Nome Completo', type: 'text', placeholder: 'Ex: João Silva' },
-      { id: 'cpf', label: 'CPF', type: 'text', placeholder: '000.000.000-00' },
-      { id: 'rg', label: 'RG', type: 'text', placeholder: 'Ex: 12.345.678-9' },
+      { id: 'cpf', label: 'CPF', type: 'text', mask: 'cpf', placeholder: '000.000.000-00' },
+      { id: 'rg', label: 'RG', type: 'text', mask: 'rg', placeholder: '00.000.000-0' },
       { id: 'data_nascimento', label: 'Data de Nascimento', type: 'date' },
       {
          id: 'sexo', label: 'Sexo', type: 'select',
          options: [
-            { value: 'Masculino', label: 'Masculino' },
-            { value: 'Feminino', label: 'Feminino' },
-            { value: 'Outro', label: 'Outro' },
+            { value: 'M', label: 'Masculino' },
+            { value: 'F', label: 'Feminino' },
+            { value: 'O', label: 'Outro' },
          ],
       },
    ],

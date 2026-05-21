@@ -13,17 +13,25 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import PersonIcon from '@mui/icons-material/Person';
 import { BRAND_GRADIENT } from '../style/theme';
+import { parseBackendDate } from '../utils/masks';
 
 const FMT_BRL = (v) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
 
 const FMT_DATE = (iso) => {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('pt-BR', {
+  const d = parseBackendDate(iso);
+  if (!d) return '—';
+  return d.toLocaleString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
 };
+
+// Backend usa id_cliente/id_produto/id_servico/criado_em.
+const getClienteId = (venda) => venda.id_cliente ?? venda.cliente_id;
+const getProdutoId = (item) => item.id_produto ?? item.produto_id;
+const getServicoId = (item) => item.id_servico ?? item.servico_id;
+const getDataVenda = (venda) => venda.criado_em ?? venda.data_venda;
 
 const PAYMENT_COLORS = {
   'PIX': '#10b981',
@@ -36,8 +44,9 @@ const SaleRow = ({ venda, clients, products, services, onDelete }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
 
-  const clientName = venda.cliente_id
-    ? clients.find(c => c.id === venda.cliente_id)?.nome || `Cliente #${venda.cliente_id}`
+  const clienteId = getClienteId(venda);
+  const clientName = clienteId
+    ? clients.find(c => c.id === clienteId)?.nome || 'Cliente'
     : 'Sem cliente';
 
   const payColor = PAYMENT_COLORS[venda.forma_pagamento] || theme.palette.text.secondary;
@@ -62,10 +71,10 @@ const SaleRow = ({ venda, clients, products, services, onDelete }) => {
 
         <TableCell>
           <Typography variant="body2" sx={{ fontWeight: 700, color: 'primary.main' }}>
-            #{String(venda.id).padStart(4, '0')}
+            #{String(venda.id || '').slice(0, 8)}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            {FMT_DATE(venda.data_venda)}
+            {FMT_DATE(getDataVenda(venda))}
           </Typography>
         </TableCell>
 
@@ -144,10 +153,12 @@ const SaleRow = ({ venda, clients, products, services, onDelete }) => {
               </Typography>
               <Stack spacing={0.75}>
                 {venda.itens?.length > 0 ? venda.itens.map((item, idx) => {
-                  const isServico = item.servico_id != null;
+                  const servicoId = getServicoId(item);
+                  const produtoId = getProdutoId(item);
+                  const isServico = servicoId != null;
                   const nome = isServico
-                    ? services.find(s => s.id === item.servico_id)?.nome || `Serviço #${item.servico_id}`
-                    : products.find(p => p.id === item.produto_id)?.nome || `Produto #${item.produto_id}`;
+                    ? services.find(s => s.id === servicoId)?.nome || 'Serviço'
+                    : products.find(p => p.id === produtoId)?.nome || 'Produto';
                   return (
                     <Stack key={idx} direction="row" alignItems="center" justifyContent="space-between">
                       <Stack direction="row" alignItems="center" spacing={1}>
@@ -196,7 +207,8 @@ const SaleRow = ({ venda, clients, products, services, onDelete }) => {
 
 const VendasPage = ({ vendas = [], clients = [], products = [], services = [], loading = false, onDelete }) => {
   const totalHoje = vendas.filter(v => {
-    const d = new Date(v.data_venda);
+    const d = parseBackendDate(getDataVenda(v));
+    if (!d) return false;
     const hoje = new Date();
     return d.getDate() === hoje.getDate() && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
   });

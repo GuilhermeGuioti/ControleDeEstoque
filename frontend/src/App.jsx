@@ -14,13 +14,18 @@ import api from "./services/api";
 import getAppTheme from "./style/theme";
 import serviceConfig from "./configs/serviceConfig";
 import clientConfig from "./configs/clientConfig";
-import productConfig from "./configs/productConfig";
+import buildProductConfig from "./configs/productConfig";
+import buildLookupConfig from "./configs/lookupConfig";
+import buildStockBatchConfig from "./configs/stockBatchConfig";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const [mode, setMode] = useState("light");
   const [notification, setNotification] = useState({ open: false, message: "", severity: "info" });
+
+  // Resumo de estoque por produto (vem de /produtos/estoque/resumo)
+  const [estoqueResumo, setEstoqueResumo] = useState([]);
 
   const toggleTheme = () => setMode((prev) => (prev === "light" ? "dark" : "light"));
 
@@ -50,23 +55,94 @@ function App() {
 
   const notify = (severity, message) => setNotification({ open: true, severity, message });
 
+  // CRUDs primários
   const services = useCrud("/servicos", notify);
   const clients = useCrud("/clientes", notify);
   const products = useCrud("/produtos", notify);
   const vendas = useCrud("/vendas", notify);
+
+  // Tabelas-pivô e movimentações de estoque
+  const categorias = useCrud("/categorias", notify);
+  const fabricantes = useCrud("/fabricantes", notify);
+  const fornecedores = useCrud("/fornecedores", notify);
+  const estoques = useCrud("/estoques", notify);
+
+  // /produtos/ não devolve quantidade — quantidade vem de /produtos/estoque/resumo.
+  const fetchEstoqueResumo = async () => {
+    try {
+      const resp = await api.get("/produtos/estoque/resumo");
+      setEstoqueResumo(resp.data || []);
+    } catch (err) {
+      console.warn("Falha ao carregar resumo de estoque:", err?.response?.data || err.message);
+    }
+  };
 
   useEffect(() => {
     if (!isLoggedIn) return;
     products.fetchData();
     services.fetchData();
     clients.fetchData();
+    categorias.fetchData();
+    fabricantes.fetchData();
+    fornecedores.fetchData();
+    fetchEstoqueResumo();
+    if (currentTab === 6) estoques.fetchData();
     if (currentTab === 0 || currentTab === 5) vendas.fetchData();
   }, [isLoggedIn, currentTab]);
 
-  const handleQuickExit = (item, quantity) => {
-    if (item && item.id) {
-      const newQuantity = Math.max(0, (item.quantidade || 0) - quantity);
-      products.handleEdit(item.id, { ...item, quantidade: newQuantity });
+  // Mescla resumo de estoque (quantidade_total) em cada produto para a tabela.
+  const productsWithStock = useMemo(() => {
+    const byId = new Map(estoqueResumo.map((e) => [e.id_produto, e]));
+    return products.data.map((p) => ({
+      ...p,
+      quantidade_total: byId.get(p.id)?.quantidade_total ?? 0,
+    }));
+  }, [products.data, estoqueResumo]);
+
+  const productConfig = useMemo(
+    () => buildProductConfig({
+      categorias: categorias.data,
+      fornecedores: fornecedores.data,
+      fabricantes: fabricantes.data,
+    }),
+    [categorias.data, fornecedores.data, fabricantes.data]
+  );
+
+  const categoriaConfig = useMemo(
+    () => buildLookupConfig({ entityLabel: 'Categoria', placeholder: 'Ex: Shampoo' }),
+    []
+  );
+  const fabricanteConfig = useMemo(
+    () => buildLookupConfig({ entityLabel: 'Fabricante', placeholder: 'Ex: L\'Oréal' }),
+    []
+  );
+  const fornecedorConfig = useMemo(
+    () => buildLookupConfig({ entityLabel: 'Fornecedor', placeholder: 'Ex: Distribuidora X' }),
+    []
+  );
+  const estoqueConfig = useMemo(
+    () => buildStockBatchConfig({ products: products.data }),
+    [products.data]
+  );
+
+  // O backend tem um validator que XOR id_produto/id_servico — e o estoque é FIFO
+  // automático em vendas. Não há rota dedicada de "saída"; para tirar manualmente,
+  // o usuário usa a aba Estoque (Lotes). Mantemos o botão de saída rápida criando
+  // um lote com quantidade negativa (preco_pago=0 pra não bagunçar o custo médio).
+  const handleQuickExit = async (item, quantity) => {
+    if (!item?.id || !quantity) return;
+    try {
+      await api.post("/estoques/", {
+        id_produto: item.id,
+        quantidade: -Math.abs(quantity),
+        preco_pago: 0,
+      });
+      notify("success", "Saída registrada com sucesso!");
+      fetchEstoqueResumo();
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      const msg = typeof detail === "string" ? detail : err.message;
+      notify("error", `Erro ao registrar saída: ${msg}`);
     }
   };
 
@@ -97,7 +173,7 @@ function App() {
       >
         {currentTab === 0 && (
           <DashboardPage
-            products={products.data}
+            products={productsWithStock}
             services={services.data}
             clients={clients.data}
             vendas={vendas.data}
@@ -107,10 +183,10 @@ function App() {
 
         {currentTab === 1 && (
           <SalesPage
-            products={products.data}
+            products={productsWithStock}
             services={services.data}
             clients={clients.data}
-            onSaleComplete={() => { products.fetchData(); vendas.fetchData(); }}
+            onSaleComplete={() => { products.fetchData(); vendas.fetchData(); fetchEstoqueResumo(); }}
           />
         )}
 
@@ -127,18 +203,33 @@ function App() {
 
         {currentTab === 2 && (
           <GenericPageCrud
-            title="Estoque"
-            subtitle="Gerencie os produtos do salão"
+            title="Produtos"
+            subtitle="Catálogo de produtos"
             buttonLabel="Novo Produto"
             searchPlaceholder="Buscar produto..."
             columns={productConfig.columns}
             formFields={productConfig.fields}
-            data={products.data}
-            onSave={products.handleSave}
-            onDelete={products.handleDelete}
-            onUpdate={products.handleEdit}
+            data={productsWithStock}
+            onSave={async (payload) => { await products.handleSave(payload); fetchEstoqueResumo(); }}
+            onDelete={async (id) => { await products.handleDelete(id); fetchEstoqueResumo(); }}
+            onUpdate={async (id, payload) => { await products.handleEdit(id, payload); fetchEstoqueResumo(); }}
             onQuickExit={handleQuickExit}
             showQuickExit={true}
+          />
+        )}
+
+        {currentTab === 6 && (
+          <GenericPageCrud
+            title="Estoque"
+            subtitle="Lotes de compra (FIFO)"
+            buttonLabel="Novo Lote"
+            searchPlaceholder="Buscar..."
+            columns={estoqueConfig.columns}
+            formFields={estoqueConfig.fields}
+            data={estoques.data}
+            onSave={async (payload) => { await estoques.handleSave(payload); fetchEstoqueResumo(); }}
+            onDelete={async (id) => { await estoques.handleDelete(id); fetchEstoqueResumo(); }}
+            onUpdate={async (id, payload) => { await estoques.handleEdit(id, payload); fetchEstoqueResumo(); }}
           />
         )}
 
@@ -169,6 +260,51 @@ function App() {
             onSave={clients.handleSave}
             onDelete={clients.handleDelete}
             onUpdate={clients.handleEdit}
+          />
+        )}
+
+        {currentTab === 7 && (
+          <GenericPageCrud
+            title="Categorias"
+            subtitle="Agrupamentos de produtos"
+            buttonLabel="Nova Categoria"
+            searchPlaceholder="Buscar categoria..."
+            columns={categoriaConfig.columns}
+            formFields={categoriaConfig.fields}
+            data={categorias.data}
+            onSave={categorias.handleSave}
+            onDelete={categorias.handleDelete}
+            onUpdate={categorias.handleEdit}
+          />
+        )}
+
+        {currentTab === 8 && (
+          <GenericPageCrud
+            title="Fabricantes"
+            subtitle="Marcas dos produtos"
+            buttonLabel="Novo Fabricante"
+            searchPlaceholder="Buscar fabricante..."
+            columns={fabricanteConfig.columns}
+            formFields={fabricanteConfig.fields}
+            data={fabricantes.data}
+            onSave={fabricantes.handleSave}
+            onDelete={fabricantes.handleDelete}
+            onUpdate={fabricantes.handleEdit}
+          />
+        )}
+
+        {currentTab === 9 && (
+          <GenericPageCrud
+            title="Fornecedores"
+            subtitle="Empresas que fornecem os produtos"
+            buttonLabel="Novo Fornecedor"
+            searchPlaceholder="Buscar fornecedor..."
+            columns={fornecedorConfig.columns}
+            formFields={fornecedorConfig.fields}
+            data={fornecedores.data}
+            onSave={fornecedores.handleSave}
+            onDelete={fornecedores.handleDelete}
+            onUpdate={fornecedores.handleEdit}
           />
         )}
 
