@@ -20,9 +20,27 @@ const formatApiError = (error) => {
 
 // Detecta violação de FK do Postgres vinda em qualquer forma do detail/message.
 // O backend não normaliza esse erro hoje, então o toast vinha com SQL bruto.
+// Cobre variações de psycopg2/asyncpg/SQLAlchemy e também 409 genérico.
 const isForeignKeyViolation = (error) => {
-  const raw = JSON.stringify(error.response?.data || '') + ' ' + (error.message || '');
-  return /foreign key|ForeignKeyViolation|violates foreign key|still referenced/i.test(raw);
+  const status = error.response?.status;
+  if (status === 409) return true;
+  const raw = (
+    JSON.stringify(error.response?.data || '') +
+    ' ' +
+    (error.message || '')
+  ).toLowerCase();
+  return (
+    raw.includes('foreign key') ||
+    raw.includes('foreignkey') ||
+    raw.includes('foreignkeyviolation') ||
+    raw.includes('still referenced') ||
+    raw.includes('integrityerror') ||
+    raw.includes('violates') ||
+    raw.includes('constraint') ||
+    raw.includes('vínculo') ||
+    raw.includes('vinculado') ||
+    raw.includes('vinculada')
+  );
 };
 
 const useCrud = (endpoint, notify) => {
