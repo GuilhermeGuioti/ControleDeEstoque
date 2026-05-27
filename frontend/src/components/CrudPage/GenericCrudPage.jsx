@@ -35,6 +35,13 @@ const GenericPageCrud = ({
   const handleEdit = (item) => { setSelectedItem(item); setIsModalOpen(true); };
   const handleClose = () => { setIsModalOpen(false); setSelectedItem(null); };
 
+  const handleConfirmDelete = (id) => {
+    if (!onDelete) return;
+    if (window.confirm('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.')) {
+      onDelete(id);
+    }
+  };
+
   const handleOpenQuickExit = (item) => setQuickExitItem(item);
   const handleCloseQuickExit = () => setQuickExitItem(null);
   const handleConfirmQuickExit = (id, quantity) => {
@@ -93,7 +100,7 @@ const GenericPageCrud = ({
         columns={columns}
         data={filteredData}
         onEdit={handleEdit}
-        onDelete={onDelete}
+        onDelete={onDelete ? handleConfirmDelete : undefined}
         onQuickExit={showQuickExit ? handleOpenQuickExit : undefined}
         showQuickExit={showQuickExit}
       />

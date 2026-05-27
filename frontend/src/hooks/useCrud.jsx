@@ -18,6 +18,13 @@ const formatApiError = (error) => {
   return JSON.stringify(detail);
 };
 
+// Detecta violação de FK do Postgres vinda em qualquer forma do detail/message.
+// O backend não normaliza esse erro hoje, então o toast vinha com SQL bruto.
+const isForeignKeyViolation = (error) => {
+  const raw = JSON.stringify(error.response?.data || '') + ' ' + (error.message || '');
+  return /foreign key|ForeignKeyViolation|violates foreign key|still referenced/i.test(raw);
+};
+
 const useCrud = (endpoint, notify) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +73,13 @@ const useCrud = (endpoint, notify) => {
       await fetchData();
       notify?.('success', 'Excluído com sucesso!');
     } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        notify?.(
+          'error',
+          'Não é possível excluir: este registro está vinculado a outros (ex.: vendas, lotes de estoque). Remova os vínculos antes de excluir.',
+        );
+        return;
+      }
       notify?.('error', `Erro ao excluir: ${formatApiError(error)}`);
     }
   };
